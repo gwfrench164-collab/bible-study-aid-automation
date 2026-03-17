@@ -2,6 +2,20 @@
 
 set -u
 
+# Prevent multiple updater runs at the same time
+LOCK_FILE="/tmp/bible_study_aid_update.lock"
+
+if [ -f "$LOCK_FILE" ]; then
+    echo "Bible Study Aid updater is already running. Exiting."
+    osascript -e 'display notification "Another Bible Study Aid update is already running." with title "Bible Study Aid" sound name "Glass"'
+    exit 1
+fi
+
+touch "$LOCK_FILE"
+
+# Ensure lock file is removed when script exits
+trap 'rm -f "$LOCK_FILE"' EXIT
+
 BASE="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid"
 AUTOMATION_DIR="$BASE/98_Automation"
 SOURCES_FILE="$AUTOMATION_DIR/podcast_sources.tsv"
@@ -115,3 +129,4 @@ done < "$SOURCES_FILE"
 
 echo "Update complete." | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE"
+osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'
