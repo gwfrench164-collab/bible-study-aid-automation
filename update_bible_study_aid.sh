@@ -21,6 +21,10 @@ AUTOMATION_DIR="$BASE/98_Automation"
 SOURCES_FILE="$AUTOMATION_DIR/podcast_sources.tsv"
 LOG_DIR="$AUTOMATION_DIR/logs"
 ARCHIVE_DIR="$AUTOMATION_DIR/archives"
+LFBI_IMPORTER="$AUTOMATION_DIR/import_lfbi_files.py"
+LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
+SERMON_NOTES_IMPORTER="$AUTOMATION_DIR/import_sermon_notes.py"
+SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
@@ -38,6 +42,42 @@ if [ ! -f "$SOURCES_FILE" ]; then
     echo "Missing source file: $SOURCES_FILE" | tee -a "$LOG_FILE"
     exit 1
 fi
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Importing LFBI files..." | tee -a "$LOG_FILE"
+
+if [ -f "$LFBI_IMPORTER" ]; then
+    python3 "$LFBI_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "LFBI import complete." | tee -a "$LOG_FILE"
+else
+    echo "LFBI importer not found: $LFBI_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
+
+if [ -f "$LFF_BLOG_IMPORTER" ]; then
+    python3 "$LFF_BLOG_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "LFF blog import complete." | tee -a "$LOG_FILE"
+else
+    echo "LFF blog importer not found: $LFF_BLOG_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Importing sermon notes..." | tee -a "$LOG_FILE"
+
+if [ -f "$SERMON_NOTES_IMPORTER" ]; then
+    python3 "$SERMON_NOTES_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "Sermon notes import complete." | tee -a "$LOG_FILE"
+else
+    echo "Sermon notes importer not found: $SERMON_NOTES_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
 
 while IFS='|' read -r NAME TYPE URL DEST_REL; do
     [ -z "$NAME" ] && continue
@@ -97,6 +137,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
             [ -f "$file" ] && rm "$file"
             continue
         fi
+
         echo "Transcribing: $(basename "$file")" | tee -a "$LOG_FILE"
 
         whisper "$file" \
@@ -124,8 +165,19 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     done
 
     echo "" | tee -a "$LOG_FILE"
-
 done < "$SOURCES_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Building scripture index..." | tee -a "$LOG_FILE"
+
+if [ -f "$SCRIPTURE_INDEXER" ]; then
+    python3 "$SCRIPTURE_INDEXER" >> "$LOG_FILE" 2>&1
+    echo "Scripture index complete." | tee -a "$LOG_FILE"
+else
+    echo "Scripture indexer not found: $SCRIPTURE_INDEXER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
 
 echo "Update complete." | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE"
