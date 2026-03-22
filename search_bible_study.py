@@ -1,11 +1,9 @@
 from pathlib import Path
 import re
 import sys
-from collections import defaultdict, Counter
+from collections import Counter
 
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
-INDEX_DIR = BASE / "99_Index"
-INDEX_FILE = INDEX_DIR / "scripture_index.txt"
 
 SEARCH_FOLDERS = [
     BASE / "02_LFBI",
@@ -47,7 +45,6 @@ BOOK_CHAPTER_LIMITS = {
     "Revelation": 22,
 }
 
-BOOK_ORDER = {book: i for i, book in enumerate(BOOK_PATTERNS)}
 BOOK_REGEX = "|".join(re.escape(book) for book in BOOK_PATTERNS)
 REFERENCE_REGEX = re.compile(rf"\b({BOOK_REGEX})\s+(\d+)(?::(\d+(?:-\d+)?))?\b", re.IGNORECASE)
 
@@ -152,12 +149,80 @@ READABLE_SUFFIXES = {".txt", ".md", ".rtf"}
 
 SNIPPET_LENGTH = 220
 MAX_RESULTS = 12
+
 STOP_WORDS = {
     "the", "and", "for", "with", "that", "this", "from", "have", "your",
     "about", "into", "they", "them", "then", "than", "were", "will", "what",
     "when", "where", "which", "their", "there", "would", "could", "should",
     "unto", "upon", "also", "only", "been", "being", "through", "some",
     "more", "does", "did", "not", "give", "information", "chapter", "verse"
+}
+
+TOPIC_EXPANSIONS = {
+    "7 feasts of israel": [
+        "passover",
+        "unleavened bread",
+        "firstfruits",
+        "pentecost",
+        "feast of trumpets",
+        "trumpets",
+        "day of atonement",
+        "atonement",
+        "tabernacles",
+        "feast of tabernacles",
+        "leviticus 23",
+        "holy convocations",
+        "feasts of the lord",
+        "seven feasts",
+    ],
+    "seven feasts of israel": [
+        "passover",
+        "unleavened bread",
+        "firstfruits",
+        "pentecost",
+        "feast of trumpets",
+        "trumpets",
+        "day of atonement",
+        "atonement",
+        "tabernacles",
+        "feast of tabernacles",
+        "leviticus 23",
+        "holy convocations",
+        "feasts of the lord",
+        "seven feasts",
+    ],
+    "spiritual leadership": [
+        "leadership",
+        "leader",
+        "elders",
+        "bishop",
+        "pastor",
+        "overseer",
+        "rule well",
+        "servant leadership",
+        "ministry leadership",
+    ],
+    "premillennial rapture": [
+        "rapture",
+        "caught up",
+        "blessed hope",
+        "pretribulation",
+        "tribulation",
+        "second coming",
+        "millennial kingdom",
+        "1 thessalonians 4",
+        "1 corinthians 15",
+        "titus 2:13",
+    ],
+    "nehemiah rebuilding the people": [
+        "nehemiah",
+        "rebuilding the people",
+        "revival",
+        "the people",
+        "ezra",
+        "the wall",
+        "restore",
+    ],
 }
 
 
@@ -223,59 +288,22 @@ def extract_query_reference(query: str):
     return f"{normalized_book} {chapter}"
 
 
-def parse_reference(ref: str):
-    parts = ref.split(" ", 1)
-    book = parts[0]
-    rest = parts[1] if len(parts) > 1 else ""
-
-    if book in {"1", "2", "3"} and rest:
-        parts2 = rest.split(" ", 1)
-        book = f"{book} {parts2[0]}"
-        rest = parts2[1] if len(parts2) > 1 else ""
-
-    if ":" in rest:
-        chapter_str, verse_str = rest.split(":", 1)
-    else:
-        chapter_str, verse_str = rest, ""
-
-    try:
-        chapter_num = int(chapter_str)
-    except ValueError:
-        chapter_num = 999
-
-    verse_num = 0
-    if verse_str:
-        first_verse = verse_str.split("-", 1)[0]
-        try:
-            verse_num = int(first_verse)
-        except ValueError:
-            verse_num = 0
-
-    return BOOK_ORDER.get(book, 999), chapter_num, verse_num, ref
-
-
-def scan_file(path: Path):
-    try:
-        text = path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
-        return set()
-
-    refs = set()
-    for match in REFERENCE_REGEX.finditer(text):
-        normalized = normalize_reference(match)
-        if normalized:
-            refs.add(normalized)
-    return refs
-
-
 def tokenize(text: str):
     return re.findall(r"[a-z0-9']+", text.lower())
 
 
 def normalize_query_tokens(query: str):
     raw_tokens = tokenize(query)
-    tokens = [t for t in raw_tokens if t not in STOP_WORDS and len(t) > 1]
-    return tokens
+    return [t for t in raw_tokens if t not in STOP_WORDS and len(t) > 1]
+
+
+def get_topic_expansion_terms(query: str):
+    q = query.strip().lower()
+    terms = []
+    for topic, expansions in TOPIC_EXPANSIONS.items():
+        if q == topic or topic in q or q in topic:
+            terms.extend(expansions)
+    return terms
 
 
 def expand_token_forms(token: str):
@@ -334,22 +362,42 @@ def build_snippet(text: str, matched_forms, query_reference=None):
     start = max(0, best_pos - 80)
     end = min(len(text), best_pos + SNIPPET_LENGTH)
     snippet = text[start:end].replace("\n", " ").strip()
+
     if start > 0:
         snippet = "..." + snippet
     if end < len(text):
         snippet = snippet + "..."
+
     return snippet
 
 
-def score_file(text: str, query: str, query_tokens, query_reference=None):
+def score_file(text: str, query: str, query_tokens, query_reference=None, rel_path="", topic_terms=None):
     lower_text = text.lower()
+    lower_path = rel_path.lower()
     token_counter = Counter(tokenize(text))
 
     score = 0
     matched_forms = set()
+    if topic_terms is None:
+        topic_terms = []
+
+    if query.lower() in lower_path:
+        score += 80
+        matched_forms.add(query.lower())
 
     if query_reference:
         query_reference_lower = query_reference.lower()
+
+        path_reference_forms = {
+            query_reference_lower,
+            query_reference_lower.replace(":", "_"),
+            query_reference_lower.replace(":", " "),
+        }
+        for form in path_reference_forms:
+            if form in lower_path:
+                score += 120
+                matched_forms.add(form)
+
         if query_reference_lower in lower_text:
             score += 140
             matched_forms.add(query_reference_lower)
@@ -357,6 +405,7 @@ def score_file(text: str, query: str, query_tokens, query_reference=None):
         ref_parts = query_reference.split(" ", 1)
         book_name = ref_parts[0]
         remainder = ref_parts[1] if len(ref_parts) > 1 else ""
+
         if book_name in {"1", "2", "3"} and remainder:
             remainder_parts = remainder.split(" ", 1)
             book_name = f"{book_name} {remainder_parts[0]}"
@@ -377,6 +426,11 @@ def score_file(text: str, query: str, query_tokens, query_reference=None):
             score += 40
             matched_forms.add(chapter_words)
 
+        for form in {book_phrase, chapter_phrase, chapter_words}:
+            if form and form in lower_path:
+                score += 50
+                matched_forms.add(form)
+
     if query.lower() in lower_text:
         score += 30
         matched_forms.add(query.lower())
@@ -386,6 +440,15 @@ def score_file(text: str, query: str, query_tokens, query_reference=None):
         if len(part) >= 4 and part in lower_text:
             score += 12
             matched_forms.add(part)
+
+    for term in topic_terms:
+        term_lower = term.lower()
+        if term_lower in lower_text:
+            score += 18
+            matched_forms.add(term_lower)
+        if term_lower in lower_path:
+            score += 25
+            matched_forms.add(term_lower)
 
     matched_token_count = 0
     for token in query_tokens:
@@ -403,6 +466,8 @@ def score_file(text: str, query: str, query_tokens, query_reference=None):
             matched_token_count += 1
             score += token_score + 2
             matched_forms.add(found_form)
+            if found_form in lower_path:
+                score += 10
 
     if query_tokens and matched_token_count == len(query_tokens):
         score += 12
@@ -415,6 +480,7 @@ def score_file(text: str, query: str, query_tokens, query_reference=None):
 def run_search(query: str):
     query_tokens = normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
+    topic_terms = get_topic_expansion_terms(query)
 
     if not query_tokens and not query_reference:
         print("Please enter a more specific search.")
@@ -428,11 +494,18 @@ def run_search(query: str):
         except Exception:
             continue
 
-        score, matched_forms = score_file(text, query, query_tokens, query_reference=query_reference)
+        rel_path = path.relative_to(BASE)
+        score, matched_forms = score_file(
+            text,
+            query,
+            query_tokens,
+            query_reference=query_reference,
+            rel_path=str(rel_path),
+            topic_terms=topic_terms,
+        )
         if score <= 0:
             continue
 
-        rel_path = path.relative_to(BASE)
         snippet = build_snippet(text, matched_forms, query_reference=query_reference)
         results.append((score, str(rel_path), snippet))
 
@@ -442,6 +515,8 @@ def run_search(query: str):
     print(f"Search query: {query}")
     if query_reference:
         print(f"Recognized reference: {query_reference}")
+    if topic_terms:
+        print("Expanded topic terms: " + ", ".join(topic_terms))
     print(f"Results found: {len(results)}")
     print()
 
@@ -455,48 +530,9 @@ def run_search(query: str):
         print()
 
 
-def build_scripture_index():
-    INDEX_DIR.mkdir(parents=True, exist_ok=True)
-    scripture_map = defaultdict(set)
-
-    for folder in SEARCH_FOLDERS:
-        if not folder.exists():
-            continue
-        for path in folder.rglob("*"):
-            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES:
-                refs = scan_file(path)
-                rel_path = path.relative_to(BASE)
-                for ref in refs:
-                    scripture_map[ref].add(str(rel_path))
-
-    grouped = defaultdict(list)
-    for ref in scripture_map:
-        book_index, _, _, _ = parse_reference(ref)
-        if book_index < len(BOOK_PATTERNS):
-            grouped[BOOK_PATTERNS[book_index]].append(ref)
-
-    with INDEX_FILE.open("w", encoding="utf-8") as f:
-        for book in BOOK_PATTERNS:
-            refs = grouped.get(book, [])
-            if not refs:
-                continue
-
-            f.write(book + "\n")
-            f.write("=" * len(book) + "\n\n")
-
-            for ref in sorted(refs, key=parse_reference):
-                paths = sorted(scripture_map[ref])
-                f.write(f"{ref} ({len(paths)})\n")
-                for file_path in paths:
-                    f.write(f"  - {file_path}\n")
-                f.write("\n")
-
-    print(f"Scripture index written to: {INDEX_FILE}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         query = " ".join(sys.argv[1:]).strip()
         run_search(query)
     else:
-        build_scripture_index()
+        print('Usage: python3 search_bible_study.py "your search here"')
