@@ -441,14 +441,29 @@ def score_file(text: str, query: str, query_tokens, query_reference=None, rel_pa
             score += 12
             matched_forms.add(part)
 
+    topic_match_count = 0
+
     for term in topic_terms:
         term_lower = term.lower()
+        matched_this_term = False
+
         if term_lower in lower_text:
-            score += 18
+            score += 40
             matched_forms.add(term_lower)
+            matched_this_term = True
+
         if term_lower in lower_path:
-            score += 25
+            score += 60
             matched_forms.add(term_lower)
+            matched_this_term = True
+
+        if matched_this_term:
+            topic_match_count += 1
+
+    if topic_match_count >= 3:
+        score += 120
+    elif topic_match_count >= 2:
+        score += 60
 
     matched_token_count = 0
     for token in query_tokens:
