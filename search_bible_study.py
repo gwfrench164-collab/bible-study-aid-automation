@@ -306,6 +306,18 @@ def get_topic_expansion_terms(query: str):
     return terms
 
 
+def get_topic_anchor_rules(query: str):
+    q = query.strip().lower()
+
+    if q in {"7 feasts of israel", "seven feasts of israel"}:
+        return {
+            "required_any": {"leviticus 23", "holy convocations", "feasts of the lord"},
+            "minimum_topic_matches": 2,
+        }
+
+    return None
+
+
 def expand_token_forms(token: str):
     forms = {token}
 
@@ -371,7 +383,7 @@ def build_snippet(text: str, matched_forms, query_reference=None):
     return snippet
 
 
-def score_file(text: str, query: str, query_tokens, query_reference=None, rel_path="", topic_terms=None):
+def score_file(text: str, query: str, query_tokens, query_reference=None, rel_path="", topic_terms=None, topic_rules=None):
     lower_text = text.lower()
     lower_path = rel_path.lower()
     token_counter = Counter(tokenize(text))
@@ -380,6 +392,8 @@ def score_file(text: str, query: str, query_tokens, query_reference=None, rel_pa
     matched_forms = set()
     if topic_terms is None:
         topic_terms = []
+    if topic_rules is None:
+        topic_rules = {}
 
     if query.lower() in lower_path:
         score += 80
@@ -465,6 +479,17 @@ def score_file(text: str, query: str, query_tokens, query_reference=None, rel_pa
     elif topic_match_count >= 2:
         score += 60
 
+    required_any = {term.lower() for term in topic_rules.get("required_any", set())}
+    minimum_topic_matches = topic_rules.get("minimum_topic_matches")
+
+    if required_any:
+        anchor_hit = any(term in lower_text or term in lower_path for term in required_any)
+        if not anchor_hit and topic_match_count < 2:
+            score -= 120
+
+    if minimum_topic_matches is not None and topic_match_count < minimum_topic_matches:
+        score -= 80
+
     matched_token_count = 0
     for token in query_tokens:
         forms = expand_token_forms(token)
@@ -496,6 +521,7 @@ def run_search(query: str):
     query_tokens = normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     topic_terms = get_topic_expansion_terms(query)
+    topic_rules = get_topic_anchor_rules(query)
 
     if not query_tokens and not query_reference:
         print("Please enter a more specific search.")
@@ -517,6 +543,7 @@ def run_search(query: str):
             query_reference=query_reference,
             rel_path=str(rel_path),
             topic_terms=topic_terms,
+            topic_rules=topic_rules,
         )
         if score <= 0:
             continue
@@ -532,6 +559,8 @@ def run_search(query: str):
         print(f"Recognized reference: {query_reference}")
     if topic_terms:
         print("Expanded topic terms: " + ", ".join(topic_terms))
+    if topic_rules:
+        print(f"Topic anchor rules: {topic_rules}")
     print(f"Results found: {len(results)}")
     print()
 
