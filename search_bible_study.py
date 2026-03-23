@@ -8,6 +8,7 @@ BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_St
 SEARCH_FOLDERS = [
     BASE / "02_LFBI",
     BASE / "03_Sermon_Notes",
+    BASE / "04_Commentaries",
     BASE / "05_Podcasts",
     BASE / "06_Blogs",
 ]
