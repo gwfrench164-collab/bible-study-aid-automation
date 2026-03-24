@@ -1,10 +1,6 @@
 from pathlib import Path
 import sys
-import threading
-import time
-import webbrowser
 import subprocess
-from html import escape
 from flask import Flask, request, render_template_string, abort
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
@@ -24,7 +20,6 @@ PAGE_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bible Study Aid</title>
     <style>
-    
         :root {
             --bg: #f6f7fb;
             --panel: #ffffff;
@@ -67,9 +62,9 @@ PAGE_TEMPLATE = """
         }
         .search-row {
             display: grid;
-            grid-template-columns: minmax(300px, 1fr) 180px 120px 120px;
+            grid-template-columns: minmax(300px, 1fr) 260px 120px 120px;
             gap: 10px;
-            align-items: center;
+            align-items: start;
         }
         .field-label {
             display: block;
@@ -77,6 +72,28 @@ PAGE_TEMPLATE = """
             font-weight: 600;
             margin-bottom: 4px;
             color: var(--muted);
+        }
+        .source-filter-box {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+        }
+        .source-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+        }
+        .source-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+        .source-filter-item input {
+            margin: 0;
         }
         input[type="text"], select {
             width: 100%;
@@ -237,6 +254,9 @@ PAGE_TEMPLATE = """
             .search-row {
                 grid-template-columns: 1fr;
             }
+            .source-filter-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -254,15 +274,16 @@ PAGE_TEMPLATE = """
                     <input type="text" id="q" name="q" value="{{ query }}" placeholder="Examples: Romans 8, 7 feasts of Israel, Ussher chronology" autofocus>
                 </div>
                 <div>
-                    <label class="field-label" for="source_type">Source Type</label>
-                    <select id="source_type" name="source_type">
-                        <option value="all" {% if source_type == 'all' %}selected{% endif %}>All Sources</option>
-                        <option value="commentary" {% if source_type == 'commentary' %}selected{% endif %}>Commentary</option>
-                        <option value="podcast" {% if source_type == 'podcast' %}selected{% endif %}>Podcast</option>
-                        <option value="blog" {% if source_type == 'blog' %}selected{% endif %}>Blog</option>
-                        <option value="sermon_note" {% if source_type == 'sermon_note' %}selected{% endif %}>Sermon Note</option>
-                        <option value="lfbi" {% if source_type == 'lfbi' %}selected{% endif %}>LFBI</option>
-                    </select>
+                    <label class="field-label">Source Types</label>
+                    <div class="source-filter-box">
+                        <div class="source-filter-grid">
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="commentary" {% if 'commentary' in selected_source_types %}checked{% endif %}> Commentaries</label>
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="sermon_note" {% if 'sermon_note' in selected_source_types %}checked{% endif %}> Sermon Notes</label>
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="podcast" {% if 'podcast' in selected_source_types %}checked{% endif %}> Podcasts</label>
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="blog" {% if 'blog' in selected_source_types %}checked{% endif %}> Blogs</label>
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="lfbi" {% if 'lfbi' in selected_source_types %}checked{% endif %}> LFBI</label>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="field-label" for="limit">Results</label>
@@ -280,7 +301,7 @@ PAGE_TEMPLATE = """
         </form>
 
         {% if searched %}
-            <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if source_type != 'all' %} in <strong>{{ source_type }}</strong>{% endif %}.</div>
+            <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
 
             {% if grouped_results %}
                 {% for group in grouped_results %}
@@ -301,8 +322,8 @@ PAGE_TEMPLATE = """
                         <div class="path">{{ item.path }}</div>
                         <div class="snippet">{{ item.snippet }}</div>
                         <div class="result-actions">
-                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}&source_type={{ source_type | urlencode }}&limit={{ limit }}">Open Source</a>
-                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}&source_type={{ source_type | urlencode }}&limit={{ limit }}">Show in Finder</a>
+                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Open Source</a>
+                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Show in Finder</a>
                         </div>
                     </div>
                     {% endfor %}
@@ -319,10 +340,10 @@ PAGE_TEMPLATE = """
                     <div><strong>Quick start:</strong></div>
                     <div>1. Type a Bible reference, topic, phrase, author, or book title in the search box.</div>
                     <div>2. Click <strong>Search</strong>.</div>
-                    <div>3. Use <strong>Source Type</strong> if you want to narrow results to commentaries, podcasts, blogs, sermon notes, or LFBI.</div>
+                    <div>3. Use <strong>Source Types</strong> if you want to narrow results to one or more categories like commentaries, podcasts, blogs, sermon notes, or LFBI.</div>
                     <div>4. Increase <strong>Results</strong> if you want a broader survey.</div>
-                    <div>5. Leave this window open while the app is running at <code>http://127.0.0.1:5055</code>.</div>
-                    <div>6. The next quality-of-life improvement is a one-click Mac launcher so you do not need Terminal for normal use.</div>
+                    <div>5. Use <strong>Open Source</strong> to open a result and <strong>Show in Finder</strong> to jump to its location.</div>
+                    <div>6. This app searches a growing local library, so results will improve as more sources are added over time.</div>
                 </div>
             </div>
         {% endif %}
@@ -340,9 +361,6 @@ def normalize_limit(raw_limit: str) -> int:
     return value if value in {10, 20, 30, 50} else 20
 
 
-def open_browser_delayed():
-    time.sleep(1.0)
-    webbrowser.open("http://127.0.0.1:5055")
 
 
 def source_type_label(source_type: str) -> str:
@@ -354,6 +372,15 @@ def source_type_label(source_type: str) -> str:
         "lfbi": "LFBI",
     }
     return labels.get(source_type, source_type.replace("_", " ").title())
+
+
+def normalize_selected_source_types(raw_values):
+    allowed = ["commentary", "sermon_note", "podcast", "blog", "lfbi"]
+    cleaned = []
+    for value in raw_values:
+        if value in allowed and value not in cleaned:
+            cleaned.append(value)
+    return cleaned
 
 
 def group_results(results):
@@ -390,6 +417,13 @@ def group_results(results):
     return final_groups
 
 
+def filter_results_by_source_types(results, selected_source_types):
+    if not selected_source_types:
+        return results
+    allowed = set(selected_source_types)
+    return [item for item in results if item.get("source_type") in allowed]
+
+
 def resolve_result_path(rel_path: str) -> Path:
     candidate = (BASE / rel_path).resolve()
     try:
@@ -399,6 +433,19 @@ def resolve_result_path(rel_path: str) -> Path:
     if not candidate.exists():
         raise FileNotFoundError(rel_path)
     return candidate
+
+
+def render_page(query, selected_source_types, limit, results, searched):
+    return render_template_string(
+        PAGE_TEMPLATE,
+        query=query,
+        selected_source_types=selected_source_types,
+        selected_source_labels=[source_type_label(x) for x in selected_source_types],
+        limit=limit,
+        results=results,
+        grouped_results=group_results(results),
+        searched=searched,
+    )
 
 
 @app.route("/reveal", methods=["GET"])
@@ -414,7 +461,7 @@ def reveal_in_finder():
     subprocess.run(["open", "-R", str(full_path)], check=False)
 
     query = request.args.get("q", "").strip()
-    source_type = request.args.get("source_type", "all").strip() or "all"
+    selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
@@ -422,19 +469,10 @@ def reveal_in_finder():
 
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        if source_type != "all":
-            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
         results = raw_results[:limit]
 
-    return render_template_string(
-        PAGE_TEMPLATE,
-        query=query,
-        source_type=source_type,
-        limit=limit,
-        results=results,
-        grouped_results=group_results(results),
-        searched=searched,
-    )
+    return render_page(query, selected_source_types, limit, results, searched)
 
 
 @app.route("/open", methods=["GET"])
@@ -450,7 +488,7 @@ def open_source():
     subprocess.run(["open", str(full_path)], check=False)
 
     query = request.args.get("q", "").strip()
-    source_type = request.args.get("source_type", "all").strip() or "all"
+    selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
@@ -458,25 +496,16 @@ def open_source():
 
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        if source_type != "all":
-            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
         results = raw_results[:limit]
 
-    return render_template_string(
-        PAGE_TEMPLATE,
-        query=query,
-        source_type=source_type,
-        limit=limit,
-        results=results,
-        grouped_results=group_results(results),
-        searched=searched,
-    )
+    return render_page(query, selected_source_types, limit, results, searched)
 
 
 @app.route("/", methods=["GET"])
 def index():
     query = request.args.get("q", "").strip()
-    source_type = request.args.get("source_type", "all").strip() or "all"
+    selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
@@ -484,21 +513,11 @@ def index():
 
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        if source_type != "all":
-            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
         results = raw_results[:limit]
 
-    return render_template_string(
-        PAGE_TEMPLATE,
-        query=query,
-        source_type=source_type,
-        limit=limit,
-        results=results,
-        grouped_results=group_results(results),
-        searched=searched,
-    )
+    return render_page(query, selected_source_types, limit, results, searched)
 
 
 if __name__ == "__main__":
-    threading.Thread(target=open_browser_delayed, daemon=True).start()
     app.run(host="127.0.0.1", port=5055, debug=False)
