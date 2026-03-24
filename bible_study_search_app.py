@@ -1,9 +1,14 @@
 from pathlib import Path
 import sys
+import threading
+import time
+import webbrowser
+import subprocess
 from html import escape
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, abort
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
+BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
 if str(AUTOMATION_DIR) not in sys.path:
     sys.path.insert(0, str(AUTOMATION_DIR))
 
@@ -19,6 +24,7 @@ PAGE_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bible Study Aid</title>
     <style>
+    
         :root {
             --bg: #f6f7fb;
             --panel: #ffffff;
@@ -105,6 +111,15 @@ PAGE_TEMPLATE = """
             color: var(--muted);
             font-size: 0.95rem;
         }
+        .group-section {
+            margin-bottom: 18px;
+        }
+        .group-heading {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
         .result-card {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -119,6 +134,26 @@ PAGE_TEMPLATE = """
             align-items: flex-start;
             gap: 12px;
             margin-bottom: 8px;
+        }
+        .result-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .result-link {
+            display: inline-block;
+            text-decoration: none;
+            background: #eef2f7;
+            color: #1f2937;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .result-link:hover {
+            background: #e2e8f0;
         }
         .result-title {
             font-size: 1.05rem;
@@ -161,6 +196,21 @@ PAGE_TEMPLATE = """
             border-radius: 12px;
             padding: 24px;
             color: var(--muted);
+        }
+        .quick-start {
+            margin-top: 12px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .quick-start strong {
+            color: var(--accent);
+        }
+        .quick-start code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            background: #eef2f7;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.95em;
         }
         @media (max-width: 980px) {
             .search-row {
@@ -211,20 +261,29 @@ PAGE_TEMPLATE = """
         {% if searched %}
             <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if source_type != 'all' %} in <strong>{{ source_type }}</strong>{% endif %}.</div>
 
-            {% if results %}
-                {% for item in results %}
-                <div class="result-card">
-                    <div class="result-top">
-                        <div>
-                            <div class="result-title">{{ item.title }}</div>
-                            <div class="badges">
-                                <span class="badge">{{ item.source_type }}</span>
-                                <span class="badge badge-muted">score {{ item.score }}</span>
+            {% if grouped_results %}
+                {% for group in grouped_results %}
+                <div class="group-section">
+                    <div class="group-heading">{{ group['label'] }} ({{ group['count'] }})</div>
+                    {% for item in group['items'] %}
+                    <div class="result-card">
+                        <div class="result-top">
+                            <div>
+                                <div class="result-title">{{ item.title }}</div>
+                                <div class="badges">
+                                    <span class="badge">{{ item.source_type }}</span>
+                                    <span class="badge badge-muted">score {{ item.score }}</span>
+                                </div>
                             </div>
                         </div>
+                        <div class="path">{{ item.path }}</div>
+                        <div class="snippet">{{ item.snippet }}</div>
+                        <div class="result-actions">
+                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}&source_type={{ source_type | urlencode }}&limit={{ limit }}">Open Source</a>
+                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}&source_type={{ source_type | urlencode }}&limit={{ limit }}">Show in Finder</a>
+                        </div>
                     </div>
-                    <div class="path">{{ item.path }}</div>
-                    <div class="snippet">{{ item.snippet }}</div>
+                    {% endfor %}
                 </div>
                 {% endfor %}
             {% else %}
@@ -232,7 +291,16 @@ PAGE_TEMPLATE = """
             {% endif %}
         {% else %}
             <div class="empty-state">
-                Start with a search such as <strong>Romans 8</strong>, <strong>7 feasts of Israel</strong>, or <strong>6,000 years and 1,000 years of rest</strong>.
+                <div><strong>Welcome.</strong> Start with a search such as <strong>Romans 8</strong>, <strong>7 feasts of Israel</strong>, or <strong>6,000 years and 1,000 years of rest</strong>.</div>
+                <div class="quick-start">
+                    <div><strong>Quick start:</strong></div>
+                    <div>1. Type a Bible reference, topic, phrase, author, or book title in the search box.</div>
+                    <div>2. Click <strong>Search</strong>.</div>
+                    <div>3. Use <strong>Source Type</strong> if you want to narrow results to commentaries, podcasts, blogs, sermon notes, or LFBI.</div>
+                    <div>4. Increase <strong>Results</strong> if you want a broader survey.</div>
+                    <div>5. Leave this window open while the app is running at <code>http://127.0.0.1:5055</code>.</div>
+                    <div>6. The next quality-of-life improvement is a one-click Mac launcher so you do not need Terminal for normal use.</div>
+                </div>
             </div>
         {% endif %}
     </div>
@@ -247,6 +315,139 @@ def normalize_limit(raw_limit: str) -> int:
     except Exception:
         return 20
     return value if value in {10, 20, 30, 50} else 20
+
+
+def open_browser_delayed():
+    time.sleep(1.0)
+    webbrowser.open("http://127.0.0.1:5055")
+
+
+def source_type_label(source_type: str) -> str:
+    labels = {
+        "commentary": "Commentaries",
+        "podcast": "Podcasts",
+        "blog": "Blogs",
+        "sermon_note": "Sermon Notes",
+        "lfbi": "LFBI",
+    }
+    return labels.get(source_type, source_type.replace("_", " ").title())
+
+
+def group_results(results):
+    order = ["commentary", "sermon_note", "podcast", "blog", "lfbi", "unknown"]
+    grouped = {key: [] for key in order}
+    extras = {}
+
+    for item in results:
+        source_type = item.get("source_type", "unknown")
+        if source_type in grouped:
+            grouped[source_type].append(item)
+        else:
+            extras.setdefault(source_type, []).append(item)
+
+    final_groups = []
+    for source_type in order:
+        items = grouped.get(source_type, [])
+        if items:
+            final_groups.append({
+                "key": source_type,
+                "label": source_type_label(source_type),
+                "count": len(items),
+                "items": items,
+            })
+
+    for source_type in sorted(extras.keys()):
+        final_groups.append({
+            "key": source_type,
+            "label": source_type_label(source_type),
+            "count": len(extras[source_type]),
+            "items": extras[source_type],
+        })
+
+    return final_groups
+
+
+def resolve_result_path(rel_path: str) -> Path:
+    candidate = (BASE / rel_path).resolve()
+    try:
+        candidate.relative_to(BASE.resolve())
+    except ValueError:
+        raise FileNotFoundError(rel_path)
+    if not candidate.exists():
+        raise FileNotFoundError(rel_path)
+    return candidate
+
+
+@app.route("/reveal", methods=["GET"])
+def reveal_in_finder():
+    rel_path = request.args.get("path", "").strip()
+    if not rel_path:
+        abort(400)
+    try:
+        full_path = resolve_result_path(rel_path)
+    except FileNotFoundError:
+        abort(404)
+
+    subprocess.run(["open", "-R", str(full_path)], check=False)
+
+    query = request.args.get("q", "").strip()
+    source_type = request.args.get("source_type", "all").strip() or "all"
+    limit = normalize_limit(request.args.get("limit", "20"))
+
+    results = []
+    searched = bool(query)
+
+    if query:
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
+        if source_type != "all":
+            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        results = raw_results[:limit]
+
+    return render_template_string(
+        PAGE_TEMPLATE,
+        query=query,
+        source_type=source_type,
+        limit=limit,
+        results=results,
+        grouped_results=group_results(results),
+        searched=searched,
+    )
+
+
+@app.route("/open", methods=["GET"])
+def open_source():
+    rel_path = request.args.get("path", "").strip()
+    if not rel_path:
+        abort(400)
+    try:
+        full_path = resolve_result_path(rel_path)
+    except FileNotFoundError:
+        abort(404)
+
+    subprocess.run(["open", str(full_path)], check=False)
+
+    query = request.args.get("q", "").strip()
+    source_type = request.args.get("source_type", "all").strip() or "all"
+    limit = normalize_limit(request.args.get("limit", "20"))
+
+    results = []
+    searched = bool(query)
+
+    if query:
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
+        if source_type != "all":
+            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        results = raw_results[:limit]
+
+    return render_template_string(
+        PAGE_TEMPLATE,
+        query=query,
+        source_type=source_type,
+        limit=limit,
+        results=results,
+        grouped_results=group_results(results),
+        searched=searched,
+    )
 
 
 @app.route("/", methods=["GET"])
@@ -270,9 +471,11 @@ def index():
         source_type=source_type,
         limit=limit,
         results=results,
+        grouped_results=group_results(results),
         searched=searched,
     )
 
 
 if __name__ == "__main__":
+    threading.Thread(target=open_browser_delayed, daemon=True).start()
     app.run(host="127.0.0.1", port=5055, debug=False)
