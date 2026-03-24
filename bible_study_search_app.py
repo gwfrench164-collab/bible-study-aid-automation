@@ -1,9 +1,7 @@
-
-
-import sys
-import tkinter as tk
-from tkinter import ttk, messagebox
 from pathlib import Path
+import sys
+from html import escape
+from flask import Flask, request, render_template_string
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
 if str(AUTOMATION_DIR) not in sys.path:
@@ -11,150 +9,270 @@ if str(AUTOMATION_DIR) not in sys.path:
 
 import query_bible_study as qbs
 
+app = Flask(__name__)
 
-class BibleStudySearchApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Bible Study Aid")
-        self.geometry("1200x760")
-        self.minsize(950, 600)
+PAGE_TEMPLATE = """
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bible Study Aid</title>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --panel: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --line: #d1d5db;
+            --accent: #1d4ed8;
+            --accent-soft: #dbeafe;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 18px;
+        }
+        .header {
+            margin-bottom: 14px;
+        }
+        .header h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.9rem;
+        }
+        .header p {
+            margin: 0;
+            color: var(--muted);
+        }
+        .search-panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .search-row {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) 180px 120px 120px;
+            gap: 10px;
+            align-items: center;
+        }
+        .field-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--muted);
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #fff;
+            color: var(--text);
+        }
+        button {
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            border-radius: 10px;
+            background: var(--accent);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            filter: brightness(0.96);
+        }
+        .hint {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+        .results-meta {
+            margin: 10px 0 12px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        .result-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .result-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .result-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .badge-muted {
+            background: #eef2f7;
+            color: #475569;
+        }
+        .path {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.84rem;
+            color: var(--muted);
+            word-break: break-word;
+            margin-bottom: 10px;
+        }
+        .snippet {
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+        .empty-state {
+            background: var(--panel);
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            padding: 24px;
+            color: var(--muted);
+        }
+        @media (max-width: 980px) {
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>Bible Study Aid</h1>
+            <p>Search your local library by passage, phrase, or Bible-study topic.</p>
+        </div>
 
-        self.results_data = []
-        self._build_ui()
+        <form class="search-panel" method="get" action="/">
+            <div class="search-row">
+                <div>
+                    <label class="field-label" for="q">Search</label>
+                    <input type="text" id="q" name="q" value="{{ query }}" placeholder="Examples: Romans 8, 7 feasts of Israel, Ussher chronology" autofocus>
+                </div>
+                <div>
+                    <label class="field-label" for="source_type">Source Type</label>
+                    <select id="source_type" name="source_type">
+                        <option value="all" {% if source_type == 'all' %}selected{% endif %}>All Sources</option>
+                        <option value="commentary" {% if source_type == 'commentary' %}selected{% endif %}>Commentary</option>
+                        <option value="podcast" {% if source_type == 'podcast' %}selected{% endif %}>Podcast</option>
+                        <option value="blog" {% if source_type == 'blog' %}selected{% endif %}>Blog</option>
+                        <option value="sermon_note" {% if source_type == 'sermon_note' %}selected{% endif %}>Sermon Note</option>
+                        <option value="lfbi" {% if source_type == 'lfbi' %}selected{% endif %}>LFBI</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label" for="limit">Results</label>
+                    <select id="limit" name="limit">
+                        {% for option in [10, 20, 30, 50] %}
+                        <option value="{{ option }}" {% if limit == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="align-self: end;">
+                    <button type="submit">Search</button>
+                </div>
+            </div>
+            <div class="hint">For the best results, try broad Bible-study questions, exact Scripture references, or named teachers and books.</div>
+        </form>
 
-    def _build_ui(self):
-        outer = ttk.Frame(self, padding=10)
-        outer.pack(fill="both", expand=True)
+        {% if searched %}
+            <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if source_type != 'all' %} in <strong>{{ source_type }}</strong>{% endif %}.</div>
 
-        top = ttk.Frame(outer)
-        top.pack(fill="x")
+            {% if results %}
+                {% for item in results %}
+                <div class="result-card">
+                    <div class="result-top">
+                        <div>
+                            <div class="result-title">{{ item.title }}</div>
+                            <div class="badges">
+                                <span class="badge">{{ item.source_type }}</span>
+                                <span class="badge badge-muted">score {{ item.score }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="path">{{ item.path }}</div>
+                    <div class="snippet">{{ item.snippet }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">No results found. Try broadening the query, removing a filter, or using a Scripture reference like <strong>Romans 8</strong>.</div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                Start with a search such as <strong>Romans 8</strong>, <strong>7 feasts of Israel</strong>, or <strong>6,000 years and 1,000 years of rest</strong>.
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
 
-        ttk.Label(top, text="Search:").pack(side="left", padx=(0, 8))
 
-        self.query_var = tk.StringVar()
-        self.query_entry = ttk.Entry(top, textvariable=self.query_var)
-        self.query_entry.pack(side="left", fill="x", expand=True)
-        self.query_entry.bind("<Return>", lambda event: self.run_search())
+def normalize_limit(raw_limit: str) -> int:
+    try:
+        value = int(raw_limit)
+    except Exception:
+        return 20
+    return value if value in {10, 20, 30, 50} else 20
 
-        self.search_button = ttk.Button(top, text="Search", command=self.run_search)
-        self.search_button.pack(side="left", padx=(8, 0))
 
-        self.status_var = tk.StringVar(value="Ready.")
-        ttk.Label(outer, textvariable=self.status_var).pack(fill="x", pady=(8, 8))
+@app.route("/", methods=["GET"])
+def index():
+    query = request.args.get("q", "").strip()
+    source_type = request.args.get("source_type", "all").strip() or "all"
+    limit = normalize_limit(request.args.get("limit", "20"))
 
-        main = ttk.Panedwindow(outer, orient=tk.HORIZONTAL)
-        main.pack(fill="both", expand=True)
+    results = []
+    searched = bool(query)
 
-        left = ttk.Frame(main, padding=5)
-        right = ttk.Frame(main, padding=5)
-        main.add(left, weight=1)
-        main.add(right, weight=2)
+    if query:
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
+        if source_type != "all":
+            raw_results = [item for item in raw_results if item.get("source_type") == source_type]
+        results = raw_results[:limit]
 
-        ttk.Label(left, text="Results").pack(anchor="w")
-
-        left_inner = ttk.Frame(left)
-        left_inner.pack(fill="both", expand=True)
-
-        self.results_list = tk.Listbox(left_inner, exportselection=False)
-        self.results_list.pack(side="left", fill="both", expand=True)
-        self.results_list.bind("<<ListboxSelect>>", self.on_result_selected)
-
-        results_scroll = ttk.Scrollbar(left_inner, orient="vertical", command=self.results_list.yview)
-        results_scroll.pack(side="right", fill="y")
-        self.results_list.config(yscrollcommand=results_scroll.set)
-
-        ttk.Label(right, text="Preview").pack(anchor="w")
-
-        right_inner = ttk.Frame(right)
-        right_inner.pack(fill="both", expand=True)
-
-        self.preview_text = tk.Text(right_inner, wrap="word")
-        self.preview_text.pack(side="left", fill="both", expand=True)
-        self.preview_text.config(state="disabled")
-
-        preview_scroll = ttk.Scrollbar(right_inner, orient="vertical", command=self.preview_text.yview)
-        preview_scroll.pack(side="right", fill="y")
-        self.preview_text.config(yscrollcommand=preview_scroll.set)
-
-        actions = ttk.Frame(outer)
-        actions.pack(fill="x", pady=(8, 0))
-
-        self.copy_button = ttk.Button(actions, text="Copy Preview", command=self.copy_preview)
-        self.copy_button.pack(side="left")
-
-        self.open_path_button = ttk.Button(actions, text="Show Path", command=self.show_selected_path)
-        self.open_path_button.pack(side="left", padx=(8, 0))
-
-    def run_search(self):
-        query = self.query_var.get().strip()
-        if not query:
-            messagebox.showinfo("Search", "Please enter a search query.")
-            return
-
-        self.results_list.delete(0, tk.END)
-        self.results_data = []
-        self._set_preview("")
-        self.status_var.set(f"Searching for: {query}")
-        self.update_idletasks()
-
-        try:
-            results = qbs.run_query(query, limit=30)
-        except Exception as e:
-            messagebox.showerror("Search Error", str(e))
-            self.status_var.set("Search failed.")
-            return
-
-        self.results_data = results
-
-        for item in results:
-            display = f"[{item['score']}] ({item['source_type']}) {item['path']}"
-            self.results_list.insert(tk.END, display)
-
-        self.status_var.set(f"Found {len(results)} result(s).")
-
-        if results:
-            self.results_list.selection_set(0)
-            self.results_list.event_generate("<<ListboxSelect>>")
-
-    def on_result_selected(self, event=None):
-        selection = self.results_list.curselection()
-        if not selection:
-            return
-
-        index = selection[0]
-        item = self.results_data[index]
-
-        preview = (
-            f"Title:\n{item['title']}\n\n"
-            f"Source Type:\n{item['source_type']}\n\n"
-            f"Path:\n{item['path']}\n\n"
-            f"Score:\n{item['score']}\n\n"
-            f"Snippet:\n{item['snippet']}"
-        )
-        self._set_preview(preview)
-
-    def copy_preview(self):
-        text = self.preview_text.get("1.0", tk.END).strip()
-        if not text:
-            return
-        self.clipboard_clear()
-        self.clipboard_append(text)
-        self.status_var.set("Preview copied to clipboard.")
-
-    def show_selected_path(self):
-        selection = self.results_list.curselection()
-        if not selection:
-            return
-        item = self.results_data[selection[0]]
-        messagebox.showinfo("Result Path", item["path"])
-
-    def _set_preview(self, text: str):
-        self.preview_text.config(state="normal")
-        self.preview_text.delete("1.0", tk.END)
-        self.preview_text.insert("1.0", text)
-        self.preview_text.config(state="disabled")
+    return render_template_string(
+        PAGE_TEMPLATE,
+        query=query,
+        source_type=source_type,
+        limit=limit,
+        results=results,
+        searched=searched,
+    )
 
 
 if __name__ == "__main__":
-    app = BibleStudySearchApp()
-    app.mainloop()
+    app.run(host="127.0.0.1", port=5055, debug=False)
