@@ -114,11 +114,32 @@ PAGE_TEMPLATE = """
         .group-section {
             margin-bottom: 18px;
         }
-        .group-heading {
-            margin: 0 0 10px 0;
-            font-size: 1.1rem;
+        .group-toggle {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-size: 1.05rem;
             font-weight: 700;
             color: var(--text);
+            list-style: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .group-toggle::-webkit-details-marker {
+            display: none;
+        }
+        .group-toggle::before {
+            content: "▸";
+            display: inline-block;
+            margin-right: 8px;
+            transition: transform 0.15s ease;
+        }
+        details[open] > .group-toggle::before {
+            transform: rotate(90deg);
+        }
+        .group-body {
+            padding-top: 10px;
         }
         .result-card {
             background: var(--panel);
@@ -263,8 +284,9 @@ PAGE_TEMPLATE = """
 
             {% if grouped_results %}
                 {% for group in grouped_results %}
-                <div class="group-section">
-                    <div class="group-heading">{{ group['label'] }} ({{ group['count'] }})</div>
+                <details class="group-section" open>
+                    <summary class="group-toggle">{{ group['label'] }} ({{ group['count'] }})</summary>
+                    <div class="group-body">
                     {% for item in group['items'] %}
                     <div class="result-card">
                         <div class="result-top">
@@ -284,7 +306,8 @@ PAGE_TEMPLATE = """
                         </div>
                     </div>
                     {% endfor %}
-                </div>
+                    </div>
+                </details>
                 {% endfor %}
             {% else %}
                 <div class="empty-state">No results found. Try broadening the query, removing a filter, or using a Scripture reference like <strong>Romans 8</strong>.</div>
