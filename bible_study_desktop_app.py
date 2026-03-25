@@ -8,6 +8,15 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from bible_study_search_app import app as flask_app
+from flask import request
+
+
+@flask_app.route('/shutdown', methods=['POST'])
+def shutdown():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func:
+        func()
+    return 'Server shutting down...'
 
 
 # -----------------------------
@@ -56,6 +65,14 @@ class MainWindow(QMainWindow):
         )
         toolbar.addAction(home_btn)
 
+    def closeEvent(self, event):
+        import requests
+        try:
+            requests.post("http://127.0.0.1:5055/shutdown")
+        except Exception:
+            pass
+        event.accept()
+
 
 # -----------------------------
 # Main Entry Point
@@ -73,7 +90,9 @@ def main():
     window = MainWindow()
     window.show()
 
-    sys.exit(qt_app.exec())
+    exit_code = qt_app.exec()
+    time.sleep(0.5)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
