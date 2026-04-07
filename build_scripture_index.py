@@ -10,6 +10,7 @@ INDEX_FILE = INDEX_DIR / "scripture_index.txt"
 SEARCH_FOLDERS = [
     BASE / "02_LFBI",
     BASE / "03_Sermon_Notes",
+    BASE / "04_Commentaries",
     BASE / "05_Podcasts",
     BASE / "06_Blogs",
 ]

@@ -7,247 +7,196 @@ BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_St
 DB_PATH = BASE / "99_Index" / "bible_study.db"
 
 SEARCH_FOLDERS = [
-    BASE / "02_LFBI",
-    BASE / "03_Sermon_Notes",
-    BASE / "04_Commentaries",
-    BASE / "05_Podcasts",
-    BASE / "06_Blogs",
+    "01_Bibles",
+    "02_Originals",
+    "03_Translations",
+    "04_Commentaries",
+    "05_Devotionals",
+    "06_Theology",
+    "07_History",
+    "08_Language",
+    "09_Maps",
 ]
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf"}
-
-BOOK_PATTERNS = [
-    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
-    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
-    "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
-    "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
-    "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel",
-    "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
-    "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John",
-    "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians",
-    "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
-    "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon",
-    "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John",
-    "3 John", "Jude", "Revelation"
-]
-
-BOOK_REGEX = "|".join(re.escape(book) for book in BOOK_PATTERNS)
-REFERENCE_REGEX = re.compile(
-    rf"\b({BOOK_REGEX})\s+(\d+)(?::(\d+(?:-\d+)?))?\b",
-    re.IGNORECASE,
-)
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf"}
 
 
-def normalize_book_name(book: str) -> str:
-    for b in BOOK_PATTERNS:
-        if b.lower() == book.lower():
-            return b
-    return book
+def normalize_book_name(name: str) -> str:
+    # Normalize book names to a standard form
+    name = name.lower()
+    name = re.sub(r"[^a-z0-9]", "", name)
+    return name
 
 
-def normalize_reference(match: re.Match) -> str:
-    book = normalize_book_name(match.group(1))
-    chapter = match.group(2)
-    verse = match.group(3)
-    if verse:
-        return f"{book} {chapter}:{verse}"
-    return f"{book} {chapter}"
+def normalize_reference(ref: str) -> str:
+    # Normalize references like "John 3:16" to a standard form
+    ref = ref.strip()
+    ref = re.sub(r"\s+", " ", ref)
+    return ref
 
 
 def guess_source_type(path: Path) -> str:
-    parts = set(path.parts)
-    if "04_Commentaries" in parts:
-        return "commentary"
-    if "05_Podcasts" in parts:
-        return "podcast"
-    if "06_Blogs" in parts:
-        return "blog"
-    if "03_Sermon_Notes" in parts:
-        return "sermon_note"
-    if "02_LFBI" in parts:
-        return "lfbi"
-    return "unknown"
+    # Guess source type based on folder name or filename
+    for folder in SEARCH_FOLDERS:
+        if folder in path.parts:
+            return folder
+    return "Other"
 
 
-def collect_files() -> list[Path]:
+def collect_files(base_dir: Path):
     files = []
     for folder in SEARCH_FOLDERS:
-        if not folder.exists():
+        folder_path = base_dir / folder
+        if not folder_path.exists():
             continue
-        for path in folder.rglob("*"):
+        for path in folder_path.rglob("*"):
             if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES:
                 files.append(path)
     return files
 
 
-def read_text(path: Path) -> str:
+def read_pdf_text(path: Path) -> str:
+    # Read text from PDF file
     try:
-        return path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+        import fitz  # PyMuPDF
+    except ImportError:
+        print("PyMuPDF is required to read PDF files.")
+        return ""
+    try:
+        doc = fitz.open(str(path))
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        return text
+    except Exception as e:
+        print(f"Error reading PDF {path}: {e}")
         return ""
 
 
-def split_into_chunks(text: str, chunk_size: int = 1800, overlap: int = 250) -> list[str]:
-    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
-    if not text:
-        return []
+def read_text(path: Path) -> str:
+    if path.suffix.lower() == ".pdf":
+        return read_pdf_text(path)
+    else:
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error reading text file {path}: {e}")
+            return ""
 
-    paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
+
+def split_into_chunks(text: str, max_length: int = 1000):
+    # Split text into chunks of max_length characters
     chunks = []
-    current = ""
-
-    for para in paragraphs:
-        if len(current) + len(para) + 2 <= chunk_size:
-            current = f"{current}\n\n{para}".strip()
-        else:
-            if current:
-                chunks.append(current)
-            if len(para) <= chunk_size:
-                current = para
-            else:
-                start = 0
-                while start < len(para):
-                    end = min(start + chunk_size, len(para))
-                    piece = para[start:end].strip()
-                    if piece:
-                        chunks.append(piece)
-                    if end == len(para):
-                        break
-                    start = max(end - overlap, start + 1)
-                current = ""
-
-    if current:
-        chunks.append(current)
-
+    start = 0
+    while start < len(text):
+        end = min(start + max_length, len(text))
+        chunks.append(text[start:end])
+        start = end
     return chunks
 
 
-def extract_references(text: str) -> list[str]:
-    refs = set()
-    for match in REFERENCE_REGEX.finditer(text):
-        refs.add(normalize_reference(match))
-    return sorted(refs)
+def extract_references(text: str):
+    # Extract Bible references from text using regex
+    # This is a simplified example and may need improvement
+    pattern = re.compile(
+        r"\b(?:[1-3]\s)?(?:[A-Za-z]+)\s\d{1,3}:\d{1,3}(?:-\d{1,3})?(?:,\s*\d{1,3}:\d{1,3})*\b"
+    )
+    refs = pattern.findall(text)
+    return [normalize_reference(ref) for ref in refs]
 
 
-def init_db(conn: sqlite3.Connection) -> None:
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA synchronous=NORMAL;")
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rel_path TEXT UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            source_type TEXT NOT NULL,
-            modified_time REAL,
-            indexed_at TEXT NOT NULL
+def init_db(conn: sqlite3.Connection):
+    c = conn.cursor()
+    c.execute(
+        """
+        CREATE TABLE IF NOT EXISTS files (
+            id INTEGER PRIMARY KEY,
+            path TEXT UNIQUE,
+            source_type TEXT,
+            modified TIMESTAMP
         )
-    """)
-
-    conn.execute("""
+        """
+    )
+    c.execute(
+        """
         CREATE TABLE IF NOT EXISTS chunks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            document_id INTEGER NOT NULL,
-            chunk_index INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+            id INTEGER PRIMARY KEY,
+            file_id INTEGER,
+            chunk_index INTEGER,
+            content TEXT,
+            FOREIGN KEY(file_id) REFERENCES files(id)
         )
-    """)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS chunk_refs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chunk_id INTEGER NOT NULL,
-            scripture_ref TEXT NOT NULL,
-            FOREIGN KEY(chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+        """
+    )
+    c.execute(
+        """
+        CREATE TABLE IF NOT EXISTS references (
+            id INTEGER PRIMARY KEY,
+            chunk_id INTEGER,
+            reference TEXT,
+            FOREIGN KEY(chunk_id) REFERENCES chunks(id)
         )
-    """)
-
-    conn.execute("""
-        CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
-            content,
-            title,
-            rel_path,
-            source_type,
-            content='',
-            tokenize='porter unicode61'
-        )
-    """)
-
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_rel_path ON documents(rel_path)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunk_refs_ref ON chunk_refs(scripture_ref)")
+        """
+    )
     conn.commit()
 
 
-def clear_db(conn: sqlite3.Connection) -> None:
-    conn.execute("DELETE FROM chunk_refs")
-    conn.execute("DELETE FROM chunks")
-    conn.execute("DELETE FROM documents")
-    conn.execute("DELETE FROM chunks_fts")
+def clear_db(conn: sqlite3.Connection):
+    c = conn.cursor()
+    c.execute("DELETE FROM references")
+    c.execute("DELETE FROM chunks")
+    c.execute("DELETE FROM files")
     conn.commit()
 
 
-def index_file(conn: sqlite3.Connection, path: Path) -> None:
-    rel_path = str(path.relative_to(BASE))
-    title = path.stem
+def index_file(conn: sqlite3.Connection, path: Path):
+    c = conn.cursor()
+    stat = path.stat()
+    mtime = datetime.fromtimestamp(stat.st_mtime)
     source_type = guess_source_type(path)
-    modified_time = path.stat().st_mtime
-    indexed_at = datetime.now().isoformat(timespec="seconds")
-
     text = read_text(path)
     if not text.strip():
+        print(f"Empty or unreadable file: {path}")
         return
 
+    c.execute(
+        "INSERT OR REPLACE INTO files (path, source_type, modified) VALUES (?, ?, ?)",
+        (str(path), source_type, mtime),
+    )
+    file_id = c.lastrowid
     chunks = split_into_chunks(text)
-    if not chunks:
-        return
-
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO documents (rel_path, title, source_type, modified_time, indexed_at)
-        VALUES (?, ?, ?, ?, ?)
-    """, (rel_path, title, source_type, modified_time, indexed_at))
-    document_id = cur.lastrowid
-
-    for idx, chunk in enumerate(chunks):
-        cur.execute("""
-            INSERT INTO chunks (document_id, chunk_index, content)
-            VALUES (?, ?, ?)
-        """, (document_id, idx, chunk))
-        chunk_id = cur.lastrowid
-
-        cur.execute("""
-            INSERT INTO chunks_fts (rowid, content, title, rel_path, source_type)
-            VALUES (?, ?, ?, ?, ?)
-        """, (chunk_id, chunk, title, rel_path, source_type))
-
+    for i, chunk in enumerate(chunks):
+        c.execute(
+            "INSERT INTO chunks (file_id, chunk_index, content) VALUES (?, ?, ?)",
+            (file_id, i, chunk),
+        )
+        chunk_id = c.lastrowid
         refs = extract_references(chunk)
         for ref in refs:
-            cur.execute("""
-                INSERT INTO chunk_refs (chunk_id, scripture_ref)
-                VALUES (?, ?)
-            """, (chunk_id, ref))
-
+            c.execute(
+                "INSERT INTO references (chunk_id, reference) VALUES (?, ?)",
+                (chunk_id, ref),
+            )
     conn.commit()
-    print(f"Indexed: {rel_path} ({len(chunks)} chunks)")
+    print(f"Indexed {path} with {len(chunks)} chunks and {len(refs)} references.")
 
 
-def main() -> None:
+def main():
+    BASE.mkdir(parents=True, exist_ok=True)
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        init_db(conn)
-        clear_db(conn)
+    conn = sqlite3.connect(str(DB_PATH))
+    init_db(conn)
+    clear_db(conn)
 
-        files = collect_files()
-        print(f"Found {len(files)} files to index.\n")
+    files = collect_files(BASE)
+    print(f"Found {len(files)} files to index.")
 
-        for path in files:
-            index_file(conn, path)
+    for path in files:
+        index_file(conn, path)
 
-        print(f"\nIndex complete: {DB_PATH}")
-    finally:
-        conn.close()
+    conn.close()
+    print("Indexing complete.")
 
 
 if __name__ == "__main__":

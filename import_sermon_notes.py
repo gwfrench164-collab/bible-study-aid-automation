@@ -1,14 +1,37 @@
 from pathlib import Path
 import shutil
 
-SOURCE = Path("/Users/george/Documents/Spiritual/Church/Sermon Notes")
-DEST = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/03_Sermon_Notes")
+BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
+AUTOMATION_DIR = BASE / "98_Automation"
+REGISTRY_FILE = AUTOMATION_DIR / "source_folders.tsv"
+SOURCE_KEY = "Sermon Notes"
 
 ALLOWED_EXTENSIONS = {
     ".pdf", ".pages", ".doc", ".docx", ".txt", ".rtf", ".md"
 }
-
 SKIP_NAMES = {".DS_Store"}
+
+
+def load_registry_entry(source_key: str):
+    if not REGISTRY_FILE.exists():
+        raise FileNotFoundError(f"Missing source folder registry: {REGISTRY_FILE}")
+
+    with REGISTRY_FILE.open("r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) != 3:
+                continue
+            key, source_path, dest_rel = parts
+            if key == source_key:
+                return Path(source_path), BASE / dest_rel
+
+    raise KeyError(f"Source key not found in registry: {source_key}")
+
+
+SOURCE, DEST = load_registry_entry(SOURCE_KEY)
 
 
 def should_copy_file(path: Path) -> bool:
@@ -37,6 +60,10 @@ def copy_file(src: Path, dst: Path):
 
 
 def main():
+    if not SOURCE.exists():
+        print(f"Missing source directory: {SOURCE}")
+        return
+
     DEST.mkdir(parents=True, exist_ok=True)
 
     for path in SOURCE.rglob("*"):

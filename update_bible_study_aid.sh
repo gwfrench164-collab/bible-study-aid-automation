@@ -24,6 +24,8 @@ ARCHIVE_DIR="$AUTOMATION_DIR/archives"
 LFBI_IMPORTER="$AUTOMATION_DIR/import_lfbi_files.py"
 LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
 SERMON_NOTES_IMPORTER="$AUTOMATION_DIR/import_sermon_notes.py"
+COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
+DB_INDEXER="$AUTOMATION_DIR/index_bible_study.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 
 MODE="${1:-backlog}"
@@ -75,6 +77,18 @@ if [ -f "$SERMON_NOTES_IMPORTER" ]; then
     echo "Sermon notes import complete." | tee -a "$LOG_FILE"
 else
     echo "Sermon notes importer not found: $SERMON_NOTES_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Importing commentaries/reference files..." | tee -a "$LOG_FILE"
+
+if [ -f "$COMMENTARIES_IMPORTER" ]; then
+    python3 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "Commentaries/reference import complete." | tee -a "$LOG_FILE"
+else
+    echo "Commentaries importer not found: $COMMENTARIES_IMPORTER" | tee -a "$LOG_FILE"
 fi
 
 echo "" | tee -a "$LOG_FILE"
@@ -168,6 +182,18 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 done < "$SOURCES_FILE"
 
 echo "========================================" | tee -a "$LOG_FILE"
+echo "Rebuilding searchable database..." | tee -a "$LOG_FILE"
+
+if [ -f "$DB_INDEXER" ]; then
+    python3 "$DB_INDEXER" >> "$LOG_FILE" 2>&1
+    echo "Search database rebuild complete." | tee -a "$LOG_FILE"
+else
+    echo "Database indexer not found: $DB_INDEXER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
 echo "Building scripture index..." | tee -a "$LOG_FILE"
 
 if [ -f "$SCRIPTURE_INDEXER" ]; then
@@ -182,3 +208,4 @@ echo "" | tee -a "$LOG_FILE"
 echo "Update complete." | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE"
 osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'
+
