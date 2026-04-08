@@ -1,3 +1,11 @@
 logs/
 archives/
 state/
+.DS_Store
+__pycache__/
+*.pyc
+build/
+dist/
+.venv/
+venv/
+.env
