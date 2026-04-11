@@ -49,7 +49,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFBI files..." | tee -a "$LOG_FILE"
 
 if [ -f "$LFBI_IMPORTER" ]; then
-    python3 "$LFBI_IMPORTER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$LFBI_IMPORTER" >> "$LOG_FILE" 2>&1
     echo "LFBI import complete." | tee -a "$LOG_FILE"
 else
     echo "LFBI importer not found: $LFBI_IMPORTER" | tee -a "$LOG_FILE"
@@ -61,7 +61,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
 
 if [ -f "$LFF_BLOG_IMPORTER" ]; then
-    python3 "$LFF_BLOG_IMPORTER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$LFF_BLOG_IMPORTER" >> "$LOG_FILE" 2>&1
     echo "LFF blog import complete." | tee -a "$LOG_FILE"
 else
     echo "LFF blog importer not found: $LFF_BLOG_IMPORTER" | tee -a "$LOG_FILE"
@@ -73,7 +73,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing sermon notes..." | tee -a "$LOG_FILE"
 
 if [ -f "$SERMON_NOTES_IMPORTER" ]; then
-    python3 "$SERMON_NOTES_IMPORTER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$SERMON_NOTES_IMPORTER" >> "$LOG_FILE" 2>&1
     echo "Sermon notes import complete." | tee -a "$LOG_FILE"
 else
     echo "Sermon notes importer not found: $SERMON_NOTES_IMPORTER" | tee -a "$LOG_FILE"
@@ -85,7 +85,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing commentaries/reference files..." | tee -a "$LOG_FILE"
 
 if [ -f "$COMMENTARIES_IMPORTER" ]; then
-    python3 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
     echo "Commentaries/reference import complete." | tee -a "$LOG_FILE"
 else
     echo "Commentaries importer not found: $COMMENTARIES_IMPORTER" | tee -a "$LOG_FILE"
@@ -185,7 +185,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Rebuilding searchable database..." | tee -a "$LOG_FILE"
 
 if [ -f "$DB_INDEXER" ]; then
-    python3 "$DB_INDEXER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$DB_INDEXER" >> "$LOG_FILE" 2>&1
     echo "Search database rebuild complete." | tee -a "$LOG_FILE"
 else
     echo "Database indexer not found: $DB_INDEXER" | tee -a "$LOG_FILE"
@@ -197,7 +197,7 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Building scripture index..." | tee -a "$LOG_FILE"
 
 if [ -f "$SCRIPTURE_INDEXER" ]; then
-    python3 "$SCRIPTURE_INDEXER" >> "$LOG_FILE" 2>&1
+    /usr/local/bin/python3.14 "$SCRIPTURE_INDEXER" >> "$LOG_FILE" 2>&1
     echo "Scripture index complete." | tee -a "$LOG_FILE"
 else
     echo "Scripture indexer not found: $SCRIPTURE_INDEXER" | tee -a "$LOG_FILE"
@@ -208,4 +208,3 @@ echo "" | tee -a "$LOG_FILE"
 echo "Update complete." | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE"
 osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'
-
