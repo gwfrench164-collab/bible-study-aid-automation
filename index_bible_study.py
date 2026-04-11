@@ -9,7 +9,9 @@ DB_PATH = BASE / "99_Index" / "bible_study.db"
 SEARCH_FOLDERS = [
     "01_Bibles",
     "02_Originals",
+    "02_LFBI",
     "03_Translations",
+    "03_Sermon_Notes",
     "04_Commentaries",
     "05_Devotionals",
     "06_Theology",
@@ -18,7 +20,7 @@ SEARCH_FOLDERS = [
     "09_Maps",
 ]
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf"}
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx"}
 
 
 def normalize_book_name(name: str) -> str:
@@ -73,16 +75,38 @@ def read_pdf_text(path: Path) -> str:
         return ""
 
 
+# DOCX reading support
+def read_docx_text(path: Path) -> str:
+    # Read text from DOCX file
+    try:
+        import docx
+    except ImportError:
+        print("python-docx is required to read DOCX files.")
+        return ""
+
+    try:
+        document = docx.Document(str(path))
+        paragraphs = [p.text for p in document.paragraphs if p.text.strip()]
+        return "\n".join(paragraphs)
+    except Exception as e:
+        print(f"Error reading DOCX {path}: {e}")
+        return ""
+
+
 def read_text(path: Path) -> str:
-    if path.suffix.lower() == ".pdf":
+    suffix = path.suffix.lower()
+
+    if suffix == ".pdf":
         return read_pdf_text(path)
-    else:
-        try:
-            with path.open("r", encoding="utf-8") as f:
-                return f.read()
-        except Exception as e:
-            print(f"Error reading text file {path}: {e}")
-            return ""
+    if suffix == ".docx":
+        return read_docx_text(path)
+
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading text file {path}: {e}")
+        return ""
 
 
 def split_into_chunks(text: str, max_length: int = 1000):
@@ -166,6 +190,7 @@ def index_file(conn: sqlite3.Connection, path: Path):
     )
     file_id = c.lastrowid
     chunks = split_into_chunks(text)
+    total_refs = 0
     for i, chunk in enumerate(chunks):
         c.execute(
             "INSERT INTO chunks (file_id, chunk_index, content) VALUES (?, ?, ?)",
@@ -173,13 +198,14 @@ def index_file(conn: sqlite3.Connection, path: Path):
         )
         chunk_id = c.lastrowid
         refs = extract_references(chunk)
+        total_refs += len(refs)
         for ref in refs:
             c.execute(
                 "INSERT INTO references (chunk_id, reference) VALUES (?, ?)",
                 (chunk_id, ref),
             )
     conn.commit()
-    print(f"Indexed {path} with {len(chunks)} chunks and {len(refs)} references.")
+    print(f"Indexed {path} with {len(chunks)} chunks and {total_refs} references.")
 
 
 def main():
