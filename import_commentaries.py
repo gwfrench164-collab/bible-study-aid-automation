@@ -14,7 +14,7 @@ SEARCH_FOLDERS = [
     BASE / "06_Blogs",
 ]
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf"}
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx"}
 
 BOOK_PATTERNS = [
     "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
@@ -84,6 +84,21 @@ def read_pdf_text(path: Path) -> str:
     text = ""
 
     try:
+        import fitz
+        doc = fitz.open(str(path))
+        pieces = []
+        for page in doc:
+            page_text = page.get_text("text") or ""
+            if page_text.strip():
+                pieces.append(page_text)
+        doc.close()
+        text = "\n\n".join(pieces)
+        if len(text.strip()) > 100:
+            return text
+    except Exception:
+        pass
+
+    try:
         from pypdf import PdfReader
         reader = PdfReader(str(path))
         pieces = []
@@ -105,26 +120,26 @@ def read_pdf_text(path: Path) -> str:
     except Exception:
         pass
 
-    try:
-        import pytesseract
-        from pdf2image import convert_from_path
-
-        images = convert_from_path(str(path), first_page=1, last_page=20)
-        pieces = []
-        for img in images:
-            pieces.append(pytesseract.image_to_string(img))
-        text = "\n\n".join(pieces)
-        if len(text.strip()) > 100:
-            return text
-    except Exception:
-        pass
-
     return ""
 
 
+def read_docx_text(path: Path) -> str:
+    try:
+        import docx
+        document = docx.Document(str(path))
+        paragraphs = [p.text for p in document.paragraphs if p.text.strip()]
+        return "\n".join(paragraphs)
+    except Exception:
+        return ""
+
+
 def read_text(path: Path) -> str:
-    if path.suffix.lower() == ".pdf":
+    suffix = path.suffix.lower()
+
+    if suffix == ".pdf":
         return read_pdf_text(path)
+    if suffix == ".docx":
+        return read_docx_text(path)
 
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
