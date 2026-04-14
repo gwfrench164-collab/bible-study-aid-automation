@@ -2,6 +2,7 @@ from pathlib import Path
 import sqlite3
 import re
 from datetime import datetime
+import subprocess
 
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
 DB_PATH = BASE / "99_Index" / "bible_study.db"
@@ -14,7 +15,7 @@ SEARCH_FOLDERS = [
     BASE / "06_Blogs",
 ]
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx"}
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pages"}
 
 BOOK_PATTERNS = [
     "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
@@ -133,6 +134,31 @@ def read_docx_text(path: Path) -> str:
         return ""
 
 
+def read_pages_text(path: Path) -> str:
+    applescript = f'''
+    tell application "Pages"
+        set docRef to open POSIX file "{path}"
+        set paraList to every paragraph of body text of docRef
+        set AppleScript's text item delimiters to linefeed
+        set outText to paraList as text
+        close docRef saving no
+        quit
+    end tell
+    return outText
+    '''
+
+    try:
+        completed = subprocess.run(
+            ["osascript", "-e", applescript],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return completed.stdout
+    except Exception:
+        return ""
+
+
 def read_text(path: Path) -> str:
     suffix = path.suffix.lower()
 
@@ -140,6 +166,8 @@ def read_text(path: Path) -> str:
         return read_pdf_text(path)
     if suffix == ".docx":
         return read_docx_text(path)
+    if suffix == ".pages":
+        return read_pages_text(path)
 
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
