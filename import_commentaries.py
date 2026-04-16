@@ -6,11 +6,32 @@ import subprocess
 
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
 DB_PATH = BASE / "99_Index" / "bible_study.db"
+SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
 
-SEARCH_FOLDERS = [
-    BASE / "02_LFBI",
-    BASE / "03_Sermon_Notes",
-    BASE / "04_Commentaries",
+def load_local_source_dirs() -> list[Path]:
+    dirs: list[Path] = []
+    if not SOURCE_REGISTRY.exists():
+        return dirs
+
+    for raw_line in SOURCE_REGISTRY.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+
+        key = parts[0].strip()
+        source_path = parts[1].strip()
+
+        if key in {"LFBI", "Sermon Notes", "Reference"} and source_path:
+            dirs.append(Path(source_path))
+
+    return dirs
+
+
+SEARCH_FOLDERS = load_local_source_dirs() + [
     BASE / "05_Podcasts",
     BASE / "06_Blogs",
 ]
@@ -56,17 +77,17 @@ def normalize_reference(match: re.Match) -> str:
 
 
 def guess_source_type(path: Path) -> str:
-    parts = set(path.parts)
-    if "04_Commentaries" in parts:
+    path_str = str(path)
+    if "/Users/george/Documents/Spiritual/Reference/" in path_str:
         return "commentary"
-    if "05_Podcasts" in parts:
-        return "podcast"
-    if "06_Blogs" in parts:
-        return "blog"
-    if "03_Sermon_Notes" in parts:
+    if "/Users/george/Documents/Spiritual/Church/Sermon Notes/" in path_str:
         return "sermon_note"
-    if "02_LFBI" in parts:
+    if "/Users/george/Documents/Spiritual/LFBI/" in path_str:
         return "lfbi"
+    if "/05_Podcasts/" in path_str:
+        return "podcast"
+    if "/06_Blogs/" in path_str:
+        return "blog"
     return "unknown"
 
 
@@ -276,7 +297,10 @@ def clear_db(conn: sqlite3.Connection) -> None:
 
 
 def index_file(conn: sqlite3.Connection, path: Path) -> None:
-    rel_path = str(path.relative_to(BASE))
+    try:
+        rel_path = str(path.relative_to(BASE))
+    except Exception:
+        rel_path = str(path)
     title = path.stem
     source_type = guess_source_type(path)
     modified_time = path.stat().st_mtime
