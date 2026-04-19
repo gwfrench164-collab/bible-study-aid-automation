@@ -182,18 +182,6 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 done < "$SOURCES_FILE"
 
 echo "========================================" | tee -a "$LOG_FILE"
-echo "Rebuilding searchable database..." | tee -a "$LOG_FILE"
-
-if [ -f "$DB_INDEXER" ]; then
-    /usr/local/bin/python3.14 "$DB_INDEXER" >> "$LOG_FILE" 2>&1
-    echo "Search database rebuild complete." | tee -a "$LOG_FILE"
-else
-    echo "Database indexer not found: $DB_INDEXER" | tee -a "$LOG_FILE"
-fi
-
-echo "" | tee -a "$LOG_FILE"
-
-echo "========================================" | tee -a "$LOG_FILE"
 echo "Building scripture index..." | tee -a "$LOG_FILE"
 
 if [ -f "$SCRIPTURE_INDEXER" ]; then
