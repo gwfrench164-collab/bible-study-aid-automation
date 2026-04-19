@@ -288,23 +288,65 @@ def init_db(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def clear_db(conn: sqlite3.Connection) -> None:
-    conn.execute("DELETE FROM chunk_refs")
-    conn.execute("DELETE FROM chunks")
-    conn.execute("DELETE FROM documents")
-    conn.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('delete-all')")
-    conn.commit()
+
+
+# Helper functions for document management
+def get_rel_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(BASE))
+    except Exception:
+        return str(path)
+
+
+
+def get_existing_document(conn: sqlite3.Connection, rel_path: str) -> tuple[int, float | None] | None:
+    row = conn.execute(
+        "SELECT id, modified_time FROM documents WHERE rel_path = ?",
+        (rel_path,),
+    ).fetchone()
+    if row is None:
+        return None
+    return row[0], row[1]
+
+
+
+def delete_document_by_id(conn: sqlite3.Connection, document_id: int) -> None:
+    chunk_rows = conn.execute(
+        "SELECT id FROM chunks WHERE document_id = ?",
+        (document_id,),
+    ).fetchall()
+    chunk_ids = [row[0] for row in chunk_rows]
+
+    for chunk_id in chunk_ids:
+        conn.execute("DELETE FROM chunk_refs WHERE chunk_id = ?", (chunk_id,))
+        conn.execute("DELETE FROM chunks_fts WHERE rowid = ?", (chunk_id,))
+
+    conn.execute("DELETE FROM chunks WHERE document_id = ?", (document_id,))
+    conn.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+
+
+
+def remove_stale_documents(conn: sqlite3.Connection, valid_rel_paths: set[str]) -> None:
+    rows = conn.execute("SELECT id, rel_path FROM documents").fetchall()
+    for document_id, rel_path in rows:
+        if rel_path not in valid_rel_paths:
+            delete_document_by_id(conn, document_id)
 
 
 def index_file(conn: sqlite3.Connection, path: Path) -> None:
-    try:
-        rel_path = str(path.relative_to(BASE))
-    except Exception:
-        rel_path = str(path)
+    rel_path = get_rel_path(path)
     title = path.stem
     source_type = guess_source_type(path)
     modified_time = path.stat().st_mtime
     indexed_at = datetime.now().isoformat(timespec="seconds")
+
+    existing = get_existing_document(conn, rel_path)
+    if existing is not None:
+        existing_id, existing_modified_time = existing
+        if existing_modified_time == modified_time:
+            print(f"Skipped unchanged: {rel_path}")
+            return
+        delete_document_by_id(conn, existing_id)
 
     text = read_text(path)
     if not text.strip():
@@ -349,9 +391,12 @@ def main() -> None:
     conn = sqlite3.connect(DB_PATH)
     try:
         init_db(conn)
-        clear_db(conn)
 
         files = collect_files()
+        valid_rel_paths = {get_rel_path(path) for path in files}
+        remove_stale_documents(conn, valid_rel_paths)
+        conn.commit()
+
         print(f"Found {len(files)} files to index.\n")
 
         for path in files:
