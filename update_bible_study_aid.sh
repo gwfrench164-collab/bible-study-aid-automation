@@ -21,9 +21,7 @@ AUTOMATION_DIR="$BASE/98_Automation"
 SOURCES_FILE="$AUTOMATION_DIR/podcast_sources.tsv"
 LOG_DIR="$AUTOMATION_DIR/logs"
 ARCHIVE_DIR="$AUTOMATION_DIR/archives"
-LFBI_IMPORTER="$AUTOMATION_DIR/import_lfbi_files.py"
 LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
-SERMON_NOTES_IMPORTER="$AUTOMATION_DIR/import_sermon_notes.py"
 COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
 DB_INDEXER="$AUTOMATION_DIR/index_bible_study.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
@@ -46,18 +44,6 @@ if [ ! -f "$SOURCES_FILE" ]; then
 fi
 
 echo "========================================" | tee -a "$LOG_FILE"
-echo "Importing LFBI files..." | tee -a "$LOG_FILE"
-
-if [ -f "$LFBI_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$LFBI_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "LFBI import complete." | tee -a "$LOG_FILE"
-else
-    echo "LFBI importer not found: $LFBI_IMPORTER" | tee -a "$LOG_FILE"
-fi
-
-echo "" | tee -a "$LOG_FILE"
-
-echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
 
 if [ -f "$LFF_BLOG_IMPORTER" ]; then
@@ -65,30 +51,6 @@ if [ -f "$LFF_BLOG_IMPORTER" ]; then
     echo "LFF blog import complete." | tee -a "$LOG_FILE"
 else
     echo "LFF blog importer not found: $LFF_BLOG_IMPORTER" | tee -a "$LOG_FILE"
-fi
-
-echo "" | tee -a "$LOG_FILE"
-
-echo "========================================" | tee -a "$LOG_FILE"
-echo "Importing sermon notes..." | tee -a "$LOG_FILE"
-
-if [ -f "$SERMON_NOTES_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$SERMON_NOTES_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "Sermon notes import complete." | tee -a "$LOG_FILE"
-else
-    echo "Sermon notes importer not found: $SERMON_NOTES_IMPORTER" | tee -a "$LOG_FILE"
-fi
-
-echo "" | tee -a "$LOG_FILE"
-
-echo "========================================" | tee -a "$LOG_FILE"
-echo "Importing commentaries/reference files..." | tee -a "$LOG_FILE"
-
-if [ -f "$COMMENTARIES_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "Commentaries/reference import complete." | tee -a "$LOG_FILE"
-else
-    echo "Commentaries importer not found: $COMMENTARIES_IMPORTER" | tee -a "$LOG_FILE"
 fi
 
 echo "" | tee -a "$LOG_FILE"
@@ -180,6 +142,18 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 
     echo "" | tee -a "$LOG_FILE"
 done < "$SOURCES_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Building searchable index..." | tee -a "$LOG_FILE"
+
+if [ -f "$COMMENTARIES_IMPORTER" ]; then
+    /usr/local/bin/python3.14 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "Searchable index build complete." | tee -a "$LOG_FILE"
+else
+    echo "Indexer not found: $COMMENTARIES_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Building scripture index..." | tee -a "$LOG_FILE"
