@@ -1,3 +1,9 @@
+# LEGACY FILE
+# This file is no longer the main live indexing path for the project.
+# The current live indexing workflow is driven by:
+# - update_bible_study_aid.sh
+# - import_commentaries.py
+# This file is kept for reference only unless intentionally revived later.
 from pathlib import Path
 import sqlite3
 import re

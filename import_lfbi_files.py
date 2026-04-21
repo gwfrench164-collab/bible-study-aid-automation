@@ -1,3 +1,8 @@
+# LEGACY FILE
+# This file was part of the older copy-first import workflow.
+# LFBI files are now indexed from their original source location through
+# the current live indexing system instead of being copied first.
+# This file is kept for reference only unless intentionally reused.
 from pathlib import Path
 import shutil
 
