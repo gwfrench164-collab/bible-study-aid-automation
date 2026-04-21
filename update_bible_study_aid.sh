@@ -23,7 +23,6 @@ LOG_DIR="$AUTOMATION_DIR/logs"
 ARCHIVE_DIR="$AUTOMATION_DIR/archives"
 LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
 COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
-DB_INDEXER="$AUTOMATION_DIR/index_bible_study.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 
 MODE="${1:-backlog}"
