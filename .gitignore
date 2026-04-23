@@ -10,3 +10,5 @@ dist/
 venv/
 .env
 .idea/
+lfbi_work/
+*.log
