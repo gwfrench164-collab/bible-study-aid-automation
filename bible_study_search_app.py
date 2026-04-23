@@ -1,7 +1,8 @@
 from pathlib import Path
 import sys
 import subprocess
-from flask import Flask, request, render_template_string, abort
+from flask import Flask, request, render_template_string, abort, Response
+from html import escape
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
@@ -496,6 +497,53 @@ def open_source():
         full_path = resolve_result_path(rel_path)
     except FileNotFoundError as e:
         return f"Open Source failed.\nRequested path: {rel_path}\nReason: {e}\n", 404
+
+    if full_path.suffix.lower() == ".txt":
+        try:
+            text = full_path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            text = full_path.read_text(errors="ignore")
+
+        html = f"""
+        <!doctype html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>{escape(full_path.name)}</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    font-size: 20px;
+                    line-height: 1.75;
+                    max-width: 900px;
+                    margin: 40px auto;
+                    padding: 0 24px 60px;
+                    background: #f7f7f7;
+                    color: #111;
+                }}
+                h1 {{
+                    font-size: 28px;
+                    line-height: 1.25;
+                    margin-bottom: 24px;
+                }}
+                .content {{
+                    background: white;
+                    padding: 28px 32px;
+                    border-radius: 12px;
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>{escape(full_path.name)}</h1>
+            <div class="content">{escape(text)}</div>
+        </body>
+        </html>
+        """
+        return Response(html, mimetype="text/html")
 
     subprocess.run(["open", str(full_path)], check=False)
 
