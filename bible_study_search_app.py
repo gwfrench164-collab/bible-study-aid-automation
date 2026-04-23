@@ -2,9 +2,13 @@ from pathlib import Path
 import sys
 import subprocess
 import re
+import threading
+import time
+import webbrowser
 from copy import deepcopy
 from flask import Flask, request, render_template_string, abort, Response
 from html import escape
+from werkzeug.serving import make_server
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
@@ -493,6 +497,65 @@ def apply_highlighting(results, query: str):
 
     return highlighted
 
+class ServerThread(threading.Thread):
+    def __init__(self, flask_app, host="127.0.0.1", port=5055):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.server = make_server(host, port, flask_app)
+        self.ctx = flask_app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        self.server.serve_forever()
+
+    def shutdown(self):
+        self.server.shutdown()
+
+
+def wait_for_server(url: str, timeout: float = 5.0) -> bool:
+    import urllib.request
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1) as response:
+                if response.status < 500:
+                    return True
+        except Exception:
+            time.sleep(0.1)
+    return False
+
+
+def launch_desktop_window(url: str):
+    try:
+        import webview
+    except Exception:
+        webbrowser.open(url)
+        return "browser"
+
+    webview.create_window("Bible Study Aid", url, width=1280, height=900)
+    webview.start()
+    return "window"
+
+
+def run_desktop_app():
+    host = "127.0.0.1"
+    port = 5055
+    url = f"http://{host}:{port}"
+
+    server = ServerThread(app, host=host, port=port)
+    server.start()
+
+    if not wait_for_server(url):
+        server.shutdown()
+        raise RuntimeError(f"Server did not start at {url}")
+
+    try:
+        launch_desktop_window(url)
+    finally:
+        server.shutdown()
+        server.join(timeout=2)
 
 def render_page(query, selected_source_types, limit, results, searched):
     return render_template_string(
@@ -626,4 +689,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5055, debug=False)
+    run_desktop_app()
