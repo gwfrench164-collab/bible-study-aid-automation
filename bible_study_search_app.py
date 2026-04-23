@@ -1,6 +1,8 @@
 from pathlib import Path
 import sys
 import subprocess
+import re
+from copy import deepcopy
 from flask import Flask, request, render_template_string, abort, Response
 from html import escape
 
@@ -229,6 +231,12 @@ PAGE_TEMPLATE = """
             line-height: 1.55;
             white-space: pre-wrap;
         }
+        mark {
+            background: #fff3a3;
+            color: inherit;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
         .empty-state {
             background: var(--panel);
             border: 1px dashed var(--line);
@@ -321,7 +329,7 @@ PAGE_TEMPLATE = """
                             </div>
                         </div>
                         <div class="path">{{ item.path }}</div>
-                        <div class="snippet">{{ item.snippet }}</div>
+                        <div class="snippet">{{ item.snippet | safe }}</div>
                         <div class="result-actions">
                             <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Open Source</a>
                             <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Show in Finder</a>
@@ -447,6 +455,44 @@ def resolve_result_path(stored_path: str) -> Path:
         raise FileNotFoundError(f"Relative path does not exist under BASE: {candidate}")
     return candidate
 
+def build_highlight_pattern(query: str):
+    terms = []
+    for raw_term in re.split(r"\s+", query or ""):
+        term = raw_term.strip()
+        if len(term) >= 2:
+            terms.append(term)
+
+    if not terms:
+        return None
+
+    unique_terms = sorted(set(terms), key=len, reverse=True)
+    pattern = "|".join(re.escape(term) for term in unique_terms)
+    if not pattern:
+        return None
+
+    return re.compile(f"({pattern})", re.IGNORECASE)
+
+
+def highlight_text(text: str, pattern):
+    escaped = escape(text or "")
+    if not pattern:
+        return escaped
+    return pattern.sub(r"<mark>\1</mark>", escaped)
+
+
+def apply_highlighting(results, query: str):
+    pattern = build_highlight_pattern(query)
+    if not pattern:
+        return results
+
+    highlighted = []
+    for item in results:
+        updated = deepcopy(item)
+        updated["snippet"] = highlight_text(item.get("snippet", ""), pattern)
+        highlighted.append(updated)
+
+    return highlighted
+
 
 def render_page(query, selected_source_types, limit, results, searched):
     return render_template_string(
@@ -483,7 +529,7 @@ def reveal_in_finder():
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
         raw_results = filter_results_by_source_types(raw_results, selected_source_types)
-        results = raw_results[:limit]
+        results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)
 
@@ -557,7 +603,7 @@ def open_source():
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
         raw_results = filter_results_by_source_types(raw_results, selected_source_types)
-        results = raw_results[:limit]
+        results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)
 
@@ -574,7 +620,7 @@ def index():
     if query:
         raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
         raw_results = filter_results_by_source_types(raw_results, selected_source_types)
-        results = raw_results[:limit]
+        results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)
 
