@@ -424,14 +424,26 @@ def filter_results_by_source_types(results, selected_source_types):
     return [item for item in results if item.get("source_type") in allowed]
 
 
-def resolve_result_path(rel_path: str) -> Path:
-    candidate = (BASE / rel_path).resolve()
+def resolve_result_path(stored_path: str) -> Path:
+    raw = (stored_path or "").strip()
+    if not raw:
+        raise FileNotFoundError("Empty stored path")
+
+    candidate = Path(raw)
+
+    if candidate.is_absolute():
+        candidate = candidate.resolve()
+        if not candidate.exists():
+            raise FileNotFoundError(f"Absolute path does not exist: {candidate}")
+        return candidate
+
+    candidate = (BASE / raw).resolve()
     try:
         candidate.relative_to(BASE.resolve())
     except ValueError:
-        raise FileNotFoundError(rel_path)
+        raise FileNotFoundError(f"Relative path escaped BASE: {raw}")
     if not candidate.exists():
-        raise FileNotFoundError(rel_path)
+        raise FileNotFoundError(f"Relative path does not exist under BASE: {candidate}")
     return candidate
 
 
@@ -455,8 +467,8 @@ def reveal_in_finder():
         abort(400)
     try:
         full_path = resolve_result_path(rel_path)
-    except FileNotFoundError:
-        abort(404)
+    except FileNotFoundError as e:
+        return f"Show in Finder failed.\nRequested path: {rel_path}\nReason: {e}\n", 404
 
     subprocess.run(["open", "-R", str(full_path)], check=False)
 
@@ -482,8 +494,8 @@ def open_source():
         abort(400)
     try:
         full_path = resolve_result_path(rel_path)
-    except FileNotFoundError:
-        abort(404)
+    except FileNotFoundError as e:
+        return f"Open Source failed.\nRequested path: {rel_path}\nReason: {e}\n", 404
 
     subprocess.run(["open", str(full_path)], check=False)
 
