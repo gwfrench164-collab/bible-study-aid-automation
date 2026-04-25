@@ -319,7 +319,11 @@ def delete_document_by_id(conn: sqlite3.Connection, document_id: int) -> None:
 
     for chunk_id in chunk_ids:
         conn.execute("DELETE FROM chunk_refs WHERE chunk_id = ?", (chunk_id,))
-        conn.execute("DELETE FROM chunks_fts WHERE rowid = ?", (chunk_id,))
+        conn.execute(
+            "INSERT INTO chunks_fts(chunks_fts, rowid, content, title, rel_path, source_type) "
+            "VALUES('delete', ?, '', '', '', '')",
+            (chunk_id,),
+        )
 
     conn.execute("DELETE FROM chunks WHERE document_id = ?", (document_id,))
     conn.execute("DELETE FROM documents WHERE id = ?", (document_id,))
