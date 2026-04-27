@@ -6,7 +6,6 @@ import argparse
 import html
 import json
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -81,7 +80,12 @@ def canonical_week_title(manifest: dict, week_number: int) -> str:
         if week_number_from_title(week) == week_number:
             cleaned = re.sub(r"\s+", " ", week).strip()
             cleaned = re.sub(r"\bweek\s+\d+\b", "", cleaned, flags=re.IGNORECASE).strip(" -–:_")
-            if cleaned and not re.search(r"\b(handout|slides?|ppt|quiz|assignment|exam|watch lecture first)\b", cleaned, re.IGNORECASE):
+
+            # Ignore Moodle instruction labels that are not actual lesson titles.
+            if re.search(r"watch\s+(the\s+)?lecture\s+first", cleaned, re.IGNORECASE):
+                return ""
+
+            if cleaned and not re.search(r"\b(handout|slides?|ppt|quiz|assignment|exam)\b", cleaned, re.IGNORECASE):
                 return cleaned
     return ""
 
@@ -343,12 +347,27 @@ def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tu
 
     for index, resource in enumerate(resources, start=1):
         week_number = infer_week_number_from_resource(resource)
+        kind = resource.get("kind", "resource")
+
         if week_number is None:
-            # Most Moodle pages list resources in order. Use a rough placement when no week is visible.
-            week_number = min(max(1, index), max(1, len(weeks)))
+            downloaded_path = None
+            destination_dir = course_root / "Unassigned_Resources" / RESOURCE_SUBDIRS.get(kind, "additional_materials")
+            destination_dir.mkdir(parents=True, exist_ok=True)
+            if cookies_jar:
+                downloaded_path = download_resource(resource, destination_dir, cookies_jar=cookies_jar)
+
+            if downloaded_path:
+                downloaded.append({
+                    **resource,
+                    "week_number": None,
+                    "stored_path": str(downloaded_path.relative_to(BASE)),
+                })
+            else:
+                queued.append({**resource, "week_number": None, "week_title": "Unassigned"})
+            continue
+
         week_title = canonical_week_title(manifest, week_number)
         dirs = ensure_week_dirs(course_root, week_number, week_title)
-        kind = resource.get("kind", "resource")
         subdir = RESOURCE_SUBDIRS.get(kind, "additional_materials")
 
         downloaded_path = download_resource(resource, dirs[subdir], cookies_jar=cookies_jar) if cookies_jar else None
@@ -372,7 +391,7 @@ def write_download_queue(course_root: Path, queued: list[dict]) -> Optional[Path
     for item in queued:
         rows.append(
             "<tr>"
-            f"<td>{html.escape(str(item.get('week_number', '')))}</td>"
+            f"<td>{html.escape(str(item.get('week_number') if item.get('week_number') is not None else 'Unassigned'))}</td>"
             f"<td>{html.escape(item.get('kind', 'resource'))}</td>"
             f"<td>{html.escape(item.get('title', 'Untitled'))}</td>"
             f"<td><a href=\"{html.escape(item.get('url', ''), quote=True)}\">Open/download</a></td>"
@@ -393,7 +412,7 @@ def write_download_queue(course_root: Path, queued: list[dict]) -> Optional[Path
 </head>
 <body>
   <h1>LFBI Download Queue</h1>
-  <p>These resources could not be downloaded automatically. Open this file in Safari while logged into Moodle, click each link, and save the files into the matching week folder.</p>
+  <p>These resources could not be downloaded automatically. Open this file in Safari while logged into Moodle, click each link, and save the files into the matching week folder. Items marked Unassigned did not have a reliable week number in Moodle, so review those manually before saving.</p>
   <table>
     <thead><tr><th>Week</th><th>Kind</th><th>Title</th><th>Link</th></tr></thead>
     <tbody>
