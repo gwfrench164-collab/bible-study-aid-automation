@@ -132,8 +132,8 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
             [ -f "$file" ] && rm "$file"
 
             echo "Deleted MP3 and extra subtitle files." | tee -a "$LOG_FILE"
-            echo "Pausing 10 seconds before next file..." | tee -a "$LOG_FILE"
-            sleep 10
+            echo "Pausing 30 seconds before next file..." | tee -a "$LOG_FILE"
+            sleep 30
         else
             echo "Transcript failed for: $(basename "$file")" | tee -a "$LOG_FILE"
         fi
