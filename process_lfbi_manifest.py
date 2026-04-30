@@ -53,6 +53,53 @@ RESOURCE_SUBDIRS = {
     "other": "additional_materials",
 }
 
+LOCAL_DUPLICATE_SEARCH_ROOTS = [
+    BASE / "02_LFBI",
+    BASE / "03_Sermon_Notes",
+    BASE / "04_Commentaries",
+    BASE / "04_Books_Commentaries",
+    Path.home() / "Documents/Spiritual/Reference",
+    Path.home() / "Documents/Spiritual/LFBI",
+]
+
+
+DUPLICATE_EXTENSIONS = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".txt", ".rtf"}
+
+GENERIC_DUPLICATE_TITLES = {
+    "handout",
+    "handouts",
+    "slide",
+    "slides",
+    "slideshow",
+    "resource",
+    "resources",
+    "file",
+    "download",
+    "document",
+    "documents",
+    "pdf",
+    "ppt",
+    "pptx",
+    "doc",
+    "docx",
+    "rtf",
+    "txt",
+}
+
+GENERIC_DUPLICATE_WORDS = GENERIC_DUPLICATE_TITLES | {
+    "lesson",
+    "lessons",
+    "lecture",
+    "lectures",
+    "notes",
+    "note",
+    "class",
+    "course",
+    "materials",
+    "material",
+}
+
+
 
 def slugify(value: str) -> str:
     value = html.unescape(value or "")
@@ -60,6 +107,136 @@ def slugify(value: str) -> str:
     value = value.strip().replace(" ", "_")
     value = re.sub(r"_+", "_", value)
     return value or "resource"
+
+
+def normalize_match_text(value: str) -> str:
+    value = html.unescape(value or "").lower()
+    value = re.sub(r"\.[a-z0-9]{1,6}$", "", value)
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+    value = re.sub(r"\b(pdf|ppt|pptx|doc|docx|rtf|txt|download|file|resource|resources|handout|handouts|slide|slides|slideshow|document|documents)\b", " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value
+
+
+def has_specific_duplicate_identifier(value: str) -> bool:
+    """Return True only when the normalized text has something specific enough to compare."""
+    words = value.split()
+    if not words:
+        return False
+
+    if value in GENERIC_DUPLICATE_TITLES:
+        return False
+
+    meaningful_words = [word for word in words if word not in GENERIC_DUPLICATE_WORDS]
+    if not meaningful_words:
+        return False
+
+    # Specific lesson markers such as "acts 1", "appendix 3", or "week 5" are useful.
+    if re.search(r"\b(acts?|appendix|appendices|week)\s+\d+\b", value):
+        return True
+
+    # Avoid matching a single generic-ish word across the whole local library.
+    if len(meaningful_words) < 2:
+        return False
+
+    return True
+
+
+def word_sequence_contains(haystack: str, needle: str) -> bool:
+    """Return True when needle appears as a complete word sequence inside haystack."""
+    haystack_words = haystack.split()
+    needle_words = needle.split()
+    if not haystack_words or not needle_words:
+        return False
+    if len(needle_words) > len(haystack_words):
+        return False
+
+    for start in range(0, len(haystack_words) - len(needle_words) + 1):
+        if haystack_words[start:start + len(needle_words)] == needle_words:
+            return True
+    return False
+
+
+def duplicate_names_match(candidate: str, existing_name: str) -> bool:
+    """Match normalized duplicate names without partial-number matches like Acts 1 -> Acts 10."""
+    if not candidate or not existing_name:
+        return False
+    if candidate == existing_name:
+        return True
+    return word_sequence_contains(existing_name, candidate) or word_sequence_contains(candidate, existing_name)
+
+
+def resource_candidate_names(resource: dict) -> list[str]:
+    candidates = []
+    title = resource.get("title", "")
+    url = resource.get("url", "")
+
+    if title:
+        candidates.append(title)
+
+    parsed_name = Path(unquote(urlparse(url).path)).name if url else ""
+    if parsed_name:
+        candidates.append(parsed_name)
+
+    normalized = []
+    for candidate in candidates:
+        match_text = normalize_match_text(candidate)
+        if not match_text:
+            continue
+        if len(match_text) < 6:
+            continue
+        if not has_specific_duplicate_identifier(match_text):
+            continue
+        normalized.append(match_text)
+    return normalized
+
+
+def scan_existing_library_files() -> list[dict]:
+    files = []
+    for root in LOCAL_DUPLICATE_SEARCH_ROOTS:
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.suffix.lower() not in DUPLICATE_EXTENSIONS:
+                continue
+            normalized_name = normalize_match_text(path.name)
+            if not has_specific_duplicate_identifier(normalized_name):
+                continue
+            files.append({
+                "path": path,
+                "normalized_name": normalized_name,
+            })
+    return files
+
+
+def find_existing_resource(resource: dict, existing_files: list[dict]) -> Optional[Path]:
+    candidates = resource_candidate_names(resource)
+    if not candidates:
+        return None
+
+    for candidate in candidates:
+        for item in existing_files:
+            existing_name = item["normalized_name"]
+            if duplicate_names_match(candidate, existing_name):
+                return item["path"]
+
+    for candidate in candidates:
+        candidate_words = set(candidate.split())
+        if len(candidate_words) < 2:
+            continue
+        for item in existing_files:
+            existing_name = item["normalized_name"]
+            if not existing_name or not has_specific_duplicate_identifier(existing_name):
+                continue
+            existing_words = set(existing_name.split())
+            if len(existing_words) < 2:
+                continue
+            if duplicate_names_match(candidate, existing_name):
+                return item["path"]
+
+    return None
 
 
 def normalize_course_title(title: str) -> str:
@@ -339,15 +516,29 @@ def process_videos(manifest: dict, course_root: Path) -> list[dict]:
     return processed
 
 
-def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tuple[list[dict], list[dict]]:
+def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tuple[list[dict], list[dict], list[dict]]:
     resources = [r for r in manifest.get("resources", []) if r.get("kind") not in SKIP_KINDS]
     weeks = manifest.get("weeks", [])
     downloaded = []
     queued = []
+    already_available = []
+
+    existing_files = scan_existing_library_files()
+    print(f"[INFO] Scanned {len(existing_files)} existing local files for LFBI duplicate checks.")
 
     for index, resource in enumerate(resources, start=1):
         week_number = infer_week_number_from_resource(resource)
         kind = resource.get("kind", "resource")
+
+        existing_path = find_existing_resource(resource, existing_files)
+        if existing_path:
+            already_available.append({
+                **resource,
+                "existing_path": str(existing_path),
+                "existing_path_relative_to_base": str(existing_path.relative_to(BASE)) if str(existing_path).startswith(str(BASE)) else None,
+            })
+            print(f"[FOUND] Already available locally: {resource.get('title', 'Untitled')} -> {existing_path}")
+            continue
 
         if week_number is None:
             downloaded_path = None
@@ -380,7 +571,7 @@ def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tu
         else:
             queued.append({**resource, "week_number": week_number, "week_title": week_title})
 
-    return downloaded, queued
+    return downloaded, queued, already_available
 
 
 def write_download_queue(course_root: Path, queued: list[dict]) -> Optional[Path]:
@@ -428,13 +619,14 @@ def write_download_queue(course_root: Path, queued: list[dict]) -> Optional[Path
     return queue_path
 
 
-def write_processing_summary(course_root: Path, manifest: dict, downloaded: list[dict], queued: list[dict], videos: list[dict]) -> Path:
+def write_processing_summary(course_root: Path, manifest: dict, downloaded: list[dict], queued: list[dict], already_available: list[dict], videos: list[dict]) -> Path:
     summary = {
         "source_type": "lfbi",
         "course_title": normalize_course_title(manifest.get("course_title", "LFBI Course")),
         "course_slug": course_root.name,
         "downloaded_resources": downloaded,
         "queued_resources": queued,
+        "already_available_resources": already_available,
         "processed_videos": videos,
     }
     summary_path = course_root / "course_manifest_processed.json"
@@ -474,17 +666,19 @@ def main() -> int:
 
     downloaded = []
     queued = []
+    already_available = []
     if not args.skip_resources:
-        downloaded, queued = process_resources(manifest, course_root, cookies_jar=cookies_jar)
+        downloaded, queued, already_available = process_resources(manifest, course_root, cookies_jar=cookies_jar)
         write_download_queue(course_root, queued)
 
     processed_videos = []
     if not args.skip_videos:
         processed_videos = process_videos(manifest, course_root)
 
-    write_processing_summary(course_root, manifest, downloaded, queued, processed_videos)
+    write_processing_summary(course_root, manifest, downloaded, queued, already_available, processed_videos)
 
     print("\n=== LFBI PROCESSING COMPLETE ===")
+    print(f"Already available locally: {len(already_available)}")
     print(f"Downloaded resources: {len(downloaded)}")
     print(f"Queued resources: {len(queued)}")
     print(f"Processed videos: {len(processed_videos)}")
