@@ -131,9 +131,15 @@ def has_specific_duplicate_identifier(value: str) -> bool:
     if not meaningful_words:
         return False
 
-    # Specific lesson markers such as "acts 1", "appendix 3", or "week 5" are useful.
-    if re.search(r"\b(acts?|appendix|appendices|week)\s+\d+\b", value):
+    # Specific lesson markers such as "Acts 1" or "Appendix 3" are useful.
+    # A bare week number like "Week 5" is not specific enough because many courses
+    # have unrelated Week 5 handouts/slides.
+    if re.search(r"\b(acts?|appendix|appendices|appendex)\s+\d+\b", value):
         return True
+
+    if re.search(r"\bweek\s+\d+\b", value):
+        weekless_words = [word for word in meaningful_words if word != "week" and not word.isdigit()]
+        return len(weekless_words) >= 2
 
     # Avoid matching a single generic-ish word across the whole local library.
     if len(meaningful_words) < 2:
