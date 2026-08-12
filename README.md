@@ -45,6 +45,15 @@ Podcast backlog runs pause briefly between transcriptions. The default is five
 seconds and can be adjusted with `BIBLE_STUDY_PAUSE_SECONDS` if the computer
 needs a longer cooling interval.
 
+## Living Faith Fellowship churches
+
+`lff_church_directory.tsv` records the churches listed by the official Living
+Faith Fellowship directory. `discover_lff_church_sermons.py` audits their public
+websites and writes `99_Index/LFF_Church_Sermon_Audit.md` plus a machine-readable
+JSON report. Verified church feeds and video channels are registered separately
+in `lff_church_sources.tsv`; the normal updater processes both RSS and YouTube
+sources while using the same archive and transcript safeguards.
+
 ## How generated content is handled
 
 Some content is created or downloaded by the automation system and stored inside the `Bible_Study_Aid` folder.

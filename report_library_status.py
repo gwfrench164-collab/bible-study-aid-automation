@@ -13,7 +13,10 @@ AUTOMATION_DIR = BASE / "98_Automation"
 INDEX_DIR = BASE / "99_Index"
 DB_PATH = INDEX_DIR / "bible_study.db"
 SOURCE_REGISTRY = AUTOMATION_DIR / "source_folders.tsv"
-PODCAST_REGISTRY = AUTOMATION_DIR / "podcast_sources.tsv"
+PODCAST_REGISTRIES = [
+    AUTOMATION_DIR / "podcast_sources.tsv",
+    AUTOMATION_DIR / "lff_church_sources.tsv",
+]
 LOG_DIR = AUTOMATION_DIR / "logs"
 ARCHIVE_DIR = AUTOMATION_DIR / "archives"
 
@@ -138,7 +141,8 @@ def podcast_status() -> dict:
     total_transcripts = 0
     total_estimated_remaining = 0
 
-    for row in load_pipe_registry(PODCAST_REGISTRY):
+    registry_rows = [row for path in PODCAST_REGISTRIES for row in load_pipe_registry(path)]
+    for row in registry_rows:
         if len(row) < 4:
             continue
         name, source_type, url, destination = row[:4]

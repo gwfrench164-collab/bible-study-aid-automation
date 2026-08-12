@@ -19,6 +19,7 @@ trap 'rm -f "$LOCK_FILE"' EXIT
 BASE="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid"
 AUTOMATION_DIR="$BASE/98_Automation"
 SOURCES_FILE="$AUTOMATION_DIR/podcast_sources.tsv"
+LFF_SOURCES_FILE="$AUTOMATION_DIR/lff_church_sources.tsv"
 LOG_DIR="$AUTOMATION_DIR/logs"
 ARCHIVE_DIR="$AUTOMATION_DIR/archives"
 LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
@@ -41,10 +42,12 @@ echo "Limit per source: $LIMIT" | tee -a "$LOG_FILE"
 echo "Pause between transcriptions: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
-if [ ! -f "$SOURCES_FILE" ]; then
-    echo "Missing source file: $SOURCES_FILE" | tee -a "$LOG_FILE"
-    exit 1
-fi
+for REGISTRY_FILE in "$SOURCES_FILE" "$LFF_SOURCES_FILE"; do
+    if [ ! -f "$REGISTRY_FILE" ]; then
+        echo "Missing source file: $REGISTRY_FILE" | tee -a "$LOG_FILE"
+        exit 1
+    fi
+done
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
@@ -71,8 +74,8 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     echo "Destination: $DEST_DIR" | tee -a "$LOG_FILE"
     echo "Source URL: $URL" | tee -a "$LOG_FILE"
 
-    if [ "$TYPE" != "rss" ]; then
-        echo "Skipping non-rss source: $NAME" | tee -a "$LOG_FILE"
+    if [ "$TYPE" != "rss" ] && [ "$TYPE" != "youtube" ]; then
+        echo "Skipping unsupported source type '$TYPE': $NAME" | tee -a "$LOG_FILE"
         echo "" | tee -a "$LOG_FILE"
         continue
     fi
@@ -144,7 +147,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     done
 
     echo "" | tee -a "$LOG_FILE"
-done < "$SOURCES_FILE"
+done < <(cat "$SOURCES_FILE" "$LFF_SOURCES_FILE")
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing completed LFBI browser downloads..." | tee -a "$LOG_FILE"
