@@ -220,10 +220,21 @@ def extract_query_reference(query: str):
     return f"{normalized_book} {chapter}"
 
 
-def make_fts_query(query: str, query_tokens, topic_terms):
+def fts_phrase(value: str) -> str:
+    return f'"{value.strip().replace(chr(34), chr(34) * 2)}"'
+
+
+def make_fts_query(query: str, query_tokens, topic_terms, search_mode: str = "balanced"):
+    if search_mode == "exact":
+        return fts_phrase(query) if query.strip() else ""
+
+    if search_mode == "all":
+        required = [token for token in query_tokens if token]
+        return " AND ".join(fts_phrase(token) for token in required[:20])
+
     phrases = []
     if query.strip():
-        phrases.append(f'"{query.strip()}"')
+        phrases.append(fts_phrase(query))
 
     for token in query_tokens:
         phrases.append(token)
@@ -279,7 +290,7 @@ def build_snippet(text: str, query: str, topic_terms=None, query_reference=None)
     return snippet
 
 
-def run_query(query: str, limit: int = 20, source_types=None):
+def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced"):
     query_tokens = normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     topic_terms = get_topic_expansion_terms(query)
@@ -339,7 +350,7 @@ def run_query(query: str, limit: int = 20, source_types=None):
                     "snippet": build_snippet(row["content"], query, topic_terms, query_reference),
                 })
 
-        fts_query = make_fts_query(query, query_tokens, topic_terms)
+        fts_query = make_fts_query(query, query_tokens, topic_terms, search_mode)
         if fts_query:
             fts_rows = conn.execute(
                 f"""

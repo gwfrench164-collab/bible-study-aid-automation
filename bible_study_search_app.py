@@ -69,7 +69,7 @@ PAGE_TEMPLATE = """
         }
         .search-row {
             display: grid;
-            grid-template-columns: minmax(300px, 1fr) 260px 120px 120px;
+            grid-template-columns: minmax(280px, 1fr) 240px 145px 95px 110px;
             gap: 10px;
             align-items: start;
         }
@@ -134,6 +134,20 @@ PAGE_TEMPLATE = """
             margin: 10px 0 12px;
             color: var(--muted);
             font-size: 0.95rem;
+        }
+        .results-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .summary-pill {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 11px;
+            color: #475569;
+            font-size: 0.88rem;
         }
         .group-section {
             margin-bottom: 18px;
@@ -231,6 +245,12 @@ PAGE_TEMPLATE = """
             word-break: break-word;
             margin-bottom: 10px;
         }
+        details.source-location { margin-top: 8px; }
+        details.source-location summary {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
         .snippet {
             line-height: 1.55;
             white-space: pre-wrap;
@@ -299,6 +319,14 @@ PAGE_TEMPLATE = """
                     </div>
                 </div>
                 <div>
+                    <label class="field-label" for="mode">Match</label>
+                    <select id="mode" name="mode">
+                        <option value="balanced" {% if search_mode == 'balanced' %}selected{% endif %}>Best matches</option>
+                        <option value="all" {% if search_mode == 'all' %}selected{% endif %}>All words</option>
+                        <option value="exact" {% if search_mode == 'exact' %}selected{% endif %}>Exact phrase</option>
+                    </select>
+                </div>
+                <div>
                     <label class="field-label" for="limit">Results</label>
                     <select id="limit" name="limit">
                         {% for option in [10, 20, 30, 50] %}
@@ -310,11 +338,16 @@ PAGE_TEMPLATE = """
                     <button type="submit">Search</button>
                 </div>
             </div>
-            <div class="hint">For the best results, try broad Bible-study questions, exact Scripture references, or named teachers and books.</div>
+            <div class="hint"><strong>Best matches</strong> is broad and ranked. Use <strong>All words</strong> to narrow a topic, or <strong>Exact phrase</strong> when wording matters.</div>
         </form>
 
         {% if searched %}
             <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
+            {% if grouped_results %}
+            <div class="results-summary">
+                {% for group in grouped_results %}<span class="summary-pill">{{ group['label'] }}: {{ group['count'] }}</span>{% endfor %}
+            </div>
+            {% endif %}
 
             {% if grouped_results %}
                 {% for group in grouped_results %}
@@ -332,12 +365,12 @@ PAGE_TEMPLATE = """
                                 </div>
                             </div>
                         </div>
-                        <div class="path">{{ item.path }}</div>
                         <div class="snippet">{{ item.snippet | safe }}</div>
                         <div class="result-actions">
-                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Open Source</a>
-                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&limit={{ limit }}">Show in Finder</a>
+                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Open Source</a>
+                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Show in Finder</a>
                         </div>
+                        <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
                     </div>
                     {% endfor %}
                     </div>
@@ -372,6 +405,10 @@ def normalize_limit(raw_limit: str) -> int:
     except Exception:
         return 20
     return value if value in {10, 20, 30, 50} else 20
+
+
+def normalize_search_mode(raw_mode: str) -> str:
+    return raw_mode if raw_mode in {"balanced", "all", "exact"} else "balanced"
 
 
 
@@ -589,15 +626,17 @@ def run_desktop_app():
         server.shutdown()
         server.join(timeout=2)
 
-def render_page(query, selected_source_types, limit, results, searched):
+def render_page(query, selected_source_types, search_mode, limit, results, searched):
+    enriched_results = add_result_context(results)
     return render_template_string(
         PAGE_TEMPLATE,
         query=query,
         selected_source_types=selected_source_types,
         selected_source_labels=[source_type_label(x) for x in selected_source_types],
+        search_mode=search_mode,
         limit=limit,
-        results=add_result_context(results),
-        grouped_results=group_results(add_result_context(results)),
+        results=enriched_results,
+        grouped_results=group_results(enriched_results),
         searched=searched,
     )
 
@@ -616,16 +655,17 @@ def reveal_in_finder():
 
     query = request.args.get("q", "").strip()
     selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
+    search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types, search_mode=search_mode)
         results = apply_highlighting(raw_results[:limit], query)
 
-    return render_page(query, selected_source_types, limit, results, searched)
+    return render_page(query, selected_source_types, search_mode, limit, results, searched)
 
 
 @app.route("/open", methods=["GET"])
@@ -689,32 +729,34 @@ def open_source():
 
     query = request.args.get("q", "").strip()
     selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
+    search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types, search_mode=search_mode)
         results = apply_highlighting(raw_results[:limit], query)
 
-    return render_page(query, selected_source_types, limit, results, searched)
+    return render_page(query, selected_source_types, search_mode, limit, results, searched)
 
 
 @app.route("/", methods=["GET"])
 def index():
     query = request.args.get("q", "").strip()
     selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
+    search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
     limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types, search_mode=search_mode)
         results = apply_highlighting(raw_results[:limit], query)
 
-    return render_page(query, selected_source_types, limit, results, searched)
+    return render_page(query, selected_source_types, search_mode, limit, results, searched)
 
 
 if __name__ == "__main__":
