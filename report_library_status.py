@@ -57,6 +57,25 @@ def suffix_counts(root: Path) -> Counter:
     )
 
 
+def indexed_file_count(root: Path) -> int:
+    if not DB_PATH.exists() or not root.exists():
+        return 0
+
+    try:
+        rel_root = str(root.relative_to(BASE))
+    except ValueError:
+        rel_root = str(root)
+
+    connection = sqlite3.connect(DB_PATH)
+    try:
+        return connection.execute(
+            "SELECT COUNT(*) FROM documents WHERE rel_path = ? OR rel_path LIKE ?",
+            (rel_root, f"{rel_root}/%"),
+        ).fetchone()[0]
+    finally:
+        connection.close()
+
+
 def database_status() -> dict:
     status = {
         "exists": DB_PATH.exists(),
@@ -93,12 +112,15 @@ def registered_sources_status() -> list[dict]:
         root = Path(raw_path)
         counts = suffix_counts(root)
         readable = sum(count for suffix, count in counts.items() if suffix in READABLE_SUFFIXES)
+        indexed = indexed_file_count(root)
         sources.append({
             "name": key,
             "path": str(root),
             "exists": root.exists(),
             "files": sum(counts.values()),
             "readable_files": readable,
+            "indexed_files": indexed,
+            "awaiting_index": max(readable - indexed, 0),
             "unsupported_files": sum(counts.values()) - readable,
             "files_by_extension": dict(counts.most_common()),
         })
@@ -249,6 +271,8 @@ def markdown_report(report: dict) -> str:
         state = "available" if source["exists"] else "MISSING"
         lines.append(
             f"- {source['name']}: {source['readable_files']:,} readable files, "
+            f"{source['indexed_files']:,} currently searchable, "
+            f"{source['awaiting_index']:,} awaiting indexing, "
             f"{source['unsupported_files']:,} other files ({state})"
         )
 
