@@ -331,8 +331,9 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     CASE d.source_type
                         WHEN 'commentary' THEN 1
                         WHEN 'sermon_note' THEN 2
-                        WHEN 'blog' THEN 3
-                        WHEN 'podcast' THEN 4
+                        WHEN 'church_sermon' THEN 3
+                        WHEN 'blog' THEN 4
+                        WHEN 'podcast' THEN 5
                         ELSE 5
                     END,
                     d.title

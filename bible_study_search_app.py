@@ -312,6 +312,7 @@ PAGE_TEMPLATE = """
                         <div class="source-filter-grid">
                             <label class="source-filter-item"><input type="checkbox" name="source_types" value="commentary" {% if 'commentary' in selected_source_types %}checked{% endif %}> Commentaries</label>
                             <label class="source-filter-item"><input type="checkbox" name="source_types" value="sermon_note" {% if 'sermon_note' in selected_source_types %}checked{% endif %}> Sermon Notes</label>
+                            <label class="source-filter-item"><input type="checkbox" name="source_types" value="church_sermon" {% if 'church_sermon' in selected_source_types %}checked{% endif %}> Church Sermons</label>
                             <label class="source-filter-item"><input type="checkbox" name="source_types" value="podcast" {% if 'podcast' in selected_source_types %}checked{% endif %}> Podcasts</label>
                             <label class="source-filter-item"><input type="checkbox" name="source_types" value="blog" {% if 'blog' in selected_source_types %}checked{% endif %}> Blogs</label>
                             <label class="source-filter-item"><input type="checkbox" name="source_types" value="lfbi" {% if 'lfbi' in selected_source_types %}checked{% endif %}> LFBI</label>
@@ -386,7 +387,7 @@ PAGE_TEMPLATE = """
                     <div><strong>Quick start:</strong></div>
                     <div>1. Type a Bible reference, topic, phrase, author, or book title in the search box.</div>
                     <div>2. Click <strong>Search</strong>.</div>
-                    <div>3. Use <strong>Source Types</strong> if you want to narrow results to one or more categories like commentaries, podcasts, blogs, sermon notes, or LFBI.</div>
+                    <div>3. Use <strong>Source Types</strong> to narrow results to commentaries, church sermons, podcasts, blogs, sermon notes, or LFBI.</div>
                     <div>4. Increase <strong>Results</strong> if you want a broader survey.</div>
                     <div>5. Use <strong>Open Source</strong> to open a result and <strong>Show in Finder</strong> to jump to its location.</div>
                     <div>6. This app searches a growing local library, so results will improve as more sources are added over time.</div>
@@ -419,13 +420,14 @@ def source_type_label(source_type: str) -> str:
         "podcast": "Podcasts",
         "blog": "Blogs",
         "sermon_note": "Sermon Notes",
+        "church_sermon": "Church Sermons",
         "lfbi": "LFBI",
     }
     return labels.get(source_type, source_type.replace("_", " ").title())
 
 
 def normalize_selected_source_types(raw_values):
-    allowed = ["commentary", "sermon_note", "podcast", "blog", "lfbi"]
+    allowed = ["commentary", "sermon_note", "church_sermon", "podcast", "blog", "lfbi"]
     cleaned = []
     for value in raw_values:
         if value in allowed and value not in cleaned:
@@ -434,7 +436,7 @@ def normalize_selected_source_types(raw_values):
 
 
 def group_results(results):
-    order = ["commentary", "sermon_note", "podcast", "blog", "lfbi", "unknown"]
+    order = ["commentary", "sermon_note", "church_sermon", "podcast", "blog", "lfbi", "unknown"]
     grouped = {key: [] for key in order}
     extras = {}
 
@@ -489,7 +491,7 @@ def add_result_context(results):
             elif "LFBI" in parts:
                 start = parts.index("LFBI") + 1
                 context_parts = parts[start:start + 2]
-        elif item.get("source_type") == "podcast" and "05_Podcasts" in parts:
+        elif item.get("source_type") in {"podcast", "church_sermon"} and "05_Podcasts" in parts:
             start = parts.index("05_Podcasts") + 1
             context_parts = parts[start:start + 1]
         elif item.get("source_type") == "sermon_note":

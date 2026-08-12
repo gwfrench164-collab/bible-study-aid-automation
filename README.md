@@ -54,6 +54,10 @@ JSON report. Verified church feeds and video channels are registered separately
 in `lff_church_sources.tsv`; the normal updater processes both RSS and YouTube
 sources while using the same archive and transcript safeguards.
 
+Directory-church transcripts are classified as `church_sermon` in the search
+index and appear under the app's separate **Church Sermons** filter instead of
+being mixed into general podcasts.
+
 The updater's optional third argument selects `all`, `podcasts`, or `churches`.
 For example, `update_bible_study_aid.sh backlog 1 churches` takes one new sermon
 from each registered LFF church source without first working through the other

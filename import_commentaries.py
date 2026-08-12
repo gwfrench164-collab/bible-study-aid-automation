@@ -7,6 +7,7 @@ import subprocess
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
 DB_PATH = BASE / "99_Index" / "bible_study.db"
 SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
+LFF_CHURCH_REGISTRY = Path(__file__).with_name("lff_church_sources.tsv")
 
 SOURCE_TYPE_BY_KEY = {
     "LFBI": "lfbi",
@@ -41,7 +42,34 @@ def load_local_sources() -> list[tuple[Path, str]]:
 
 
 LOCAL_SOURCES = load_local_sources()
-SEARCH_SOURCES = LOCAL_SOURCES + [
+EXISTING_LFF_CHURCH_FOLDERS = [
+    "Harvest_Baptist_Church_Messages",
+    "Harvest_Baptist_Church_Of_Blue_Springs",
+    "Greater_Hope_Baptist_Church",
+    "Faith_Fellowship_Sermons",
+    "First_Baptist_Church_Of_New_Philadelphia",
+    "Heartland_Baptist_Fellowship",
+    "Whole_Heart_Fellowship_Sermons",
+    "Life_Fellowship_Sermons",
+    "Midtown_Baptist_Temple_Audio",
+]
+
+
+def load_lff_church_sources() -> list[tuple[Path, str]]:
+    sources = [(BASE / "05_Podcasts" / folder, "church_sermon") for folder in EXISTING_LFF_CHURCH_FOLDERS]
+    if not LFF_CHURCH_REGISTRY.exists():
+        return sources
+    for raw_line in LFF_CHURCH_REGISTRY.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("|")
+        if len(parts) >= 4 and parts[3].strip():
+            sources.append((BASE / parts[3].strip(), "church_sermon"))
+    return sources
+
+
+SEARCH_SOURCES = LOCAL_SOURCES + load_lff_church_sources() + [
     (BASE / "05_Podcasts", "podcast"),
     (BASE / "06_Blogs", "blog"),
 ]
