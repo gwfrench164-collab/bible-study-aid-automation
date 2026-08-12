@@ -92,6 +92,9 @@ def file_hash(path: Path) -> str:
 
 
 def is_confident_match(resource: dict, candidate: Path) -> bool:
+    captured_filename = resource.get("download_filename")
+    if captured_filename and candidate.name == captured_filename:
+        return True
     resource_id = resource_id_from_url(resource.get("url", ""))
     mapped = ACTS_DOWNLOADS.get(resource_id)
     if mapped and candidate.name == mapped[1]:
@@ -168,7 +171,11 @@ def process_manifest(manifest_path: Path, download_files: list[Path]) -> dict:
     remaining = []
     for raw_resource in queued:
         resource = enriched_resource(raw_resource)
-        matches = [path for path in download_files if is_confident_match(resource, path)]
+        captured_filename = resource.get("download_filename")
+        if captured_filename:
+            matches = [path for path in download_files if path.name == captured_filename]
+        else:
+            matches = [path for path in download_files if is_confident_match(resource, path)]
         if len(matches) == 1:
             source = matches[0]
             destination, action = safe_copy(source, destination_dir(course_root, resource))

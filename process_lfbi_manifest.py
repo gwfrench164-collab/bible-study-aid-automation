@@ -492,7 +492,7 @@ def try_whisper_fallback(video_url: str, transcript_dir: Path, work_dir: Path, t
         return final_path
     return None
 
-def process_videos(manifest: dict, course_root: Path) -> list[dict]:
+def process_videos(manifest: dict, course_root: Path, captions_only: bool = False) -> list[dict]:
     videos = manifest.get("youtube_links", [])
     processed = []
 
@@ -505,7 +505,9 @@ def process_videos(manifest: dict, course_root: Path) -> list[dict]:
 
         transcript_path = try_youtube_captions(video_url, dirs["transcripts"], dirs["work"], title)
         strategy = "captions"
-        if transcript_path is None:
+        if transcript_path is None and captions_only:
+            strategy = "captions_unavailable"
+        elif transcript_path is None:
             print(f"[INFO] Falling back to Whisper for Week {week_number:02d}...")
             transcript_path = try_whisper_fallback(video_url, dirs["transcripts"], dirs["work"], title)
             strategy = "whisper" if transcript_path else "failed"
@@ -535,6 +537,20 @@ def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tu
     for index, resource in enumerate(resources, start=1):
         week_number = infer_week_number_from_resource(resource)
         kind = resource.get("kind", "resource")
+
+        declared_existing = resource.get("satisfied_by_local_path")
+        if declared_existing:
+            declared_path = Path(declared_existing)
+            if not declared_path.is_absolute():
+                declared_path = BASE / declared_path
+            if declared_path.exists():
+                already_available.append({
+                    **resource,
+                    "existing_path": str(declared_path),
+                    "existing_path_relative_to_base": str(declared_path.relative_to(BASE)),
+                })
+                print(f"[FOUND] Declared equivalent already available: {resource.get('title', 'Untitled')} -> {declared_path}")
+                continue
 
         existing_path = find_existing_resource(resource, existing_files)
         if existing_path:
@@ -647,6 +663,7 @@ def main() -> int:
     parser.add_argument("--cookies", default=None, help="Optional Netscape-format cookies.txt file for Moodle downloads")
     parser.add_argument("--skip-videos", action="store_true", help="Do not generate YouTube transcripts")
     parser.add_argument("--skip-resources", action="store_true", help="Do not process Moodle resource links")
+    parser.add_argument("--captions-only", action="store_true", help="Use YouTube captions without falling back to lengthy audio transcription")
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest) if args.manifest else LFBI_ROOT / "Course_Acts_Spring_2019" / "course_manifest_raw.json"
@@ -670,16 +687,24 @@ def main() -> int:
     else:
         print("[INFO] No cookies.txt supplied. Moodle resources will be placed in download_queue.html if automatic download is not possible.")
 
-    downloaded = []
-    queued = []
-    already_available = []
+    summary_path = course_root / "course_manifest_processed.json"
+    existing_summary = {}
+    if summary_path.exists():
+        try:
+            existing_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing_summary = {}
+
+    downloaded = existing_summary.get("downloaded_resources", []) if args.skip_resources else []
+    queued = existing_summary.get("queued_resources", []) if args.skip_resources else []
+    already_available = existing_summary.get("already_available_resources", []) if args.skip_resources else []
     if not args.skip_resources:
         downloaded, queued, already_available = process_resources(manifest, course_root, cookies_jar=cookies_jar)
         write_download_queue(course_root, queued)
 
-    processed_videos = []
+    processed_videos = existing_summary.get("processed_videos", []) if args.skip_videos else []
     if not args.skip_videos:
-        processed_videos = process_videos(manifest, course_root)
+        processed_videos = process_videos(manifest, course_root, captions_only=args.captions_only)
 
     write_processing_summary(course_root, manifest, downloaded, queued, already_available, processed_videos)
 
