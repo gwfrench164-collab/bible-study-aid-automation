@@ -24,6 +24,57 @@ RESOURCE_SUBDIRS = {
     "other": "additional_materials",
 }
 
+# Resource IDs are stable Moodle identifiers.  They let us safely recognize
+# downloads whose visible titles are generic (for example, many files are just
+# called "Slides") and preserve the week shown in Moodle's breadcrumb.
+ACTS_DOWNLOADS = {
+    6277: (None, "2019 LFBI Acts Syllabus.pdf"),
+    6279: (1, "Handout week 1.pdf"),
+    6280: (1, "Acts intro.pdf"),
+    6281: (1, "Appendex 1 Historical Picture.pdf"),
+    6282: (None, "6282 - LFBI Bible Survey 2 - Acts Handout.pdf"),
+    6284: (2, "Handout week 2 Acts 1.pdf"),
+    6285: (2, "6285 - Acts 1.pdf"),
+    6286: (2, "Appendex 2  Jesus was in the grave 3 days and nights.pdf"),
+    6290: (3, "6290 - Handout week 3 - Acts 2.pdf"),
+    6291: (3, "Acts 1-2.pdf"),
+    6292: (3, "Appendix 4 - The Jewish Calendar and Feast Days. Dr. Best.pdf"),
+    6293: (3, "Appendex 5 - The Apostles at Pentecost.pdf"),
+    6296: (4, "Handout week 4 - Acts 2b.pdf"),
+    6297: (4, "Acts 2b.pdf"),
+    6300: (5, "Handout week 5 - Acts 2d.pdf"),
+    6301: (5, "Acts 2d.pdf"),
+    6302: (5, "Appendix 6 - 7 Baptisms Review.pdf"),
+    6305: (6, "Handout week 6 - Acts 2-4.pdf"),
+    6306: (6, "Acts 2d-4.pdf"),
+    6307: (6, "Appendix 7 - Tongues Overview.pdf"),
+    6311: (7, "Handout week 7 - Acts 4-5.pdf"),
+    6312: (7, "Acts 4-5.pdf"),
+    6315: (8, "Handout week 8 - Acts 6-8.pdf"),
+    6316: (8, "Acts 6-8.pdf"),
+    6320: (9, "6320 - Handout week 9 - Acts 9-11.pdf"),
+    6321: (9, "Acts 8-11.pdf"),
+    # Moodle exposes the same file for both Tongues resources.
+    6322: (9, "Appendix 7 - Tongues Overview.pdf"),
+    6325: (10, "6325 - Handout week 10 - Acts 12-14.pdf"),
+    6326: (10, "6326 - Acts 11-14.pdf"),
+    6331: (11, "6331 - Handout week 10 - Acts 14-16.pdf"),
+    6332: (11, "6332 - Acts 14-16.pdf"),
+    6333: (11, "6333 - Appendix 9 - Letters Written.pdf"),
+    6336: (12, "6336 - Handout week 12 - Acts 17-19.pdf"),
+    6337: (12, "6337 - Acts 17-19.pdf"),
+    6340: (13, "6340 - Handout week 13 - Acts 19-21.pdf"),
+    6341: (13, "6341 - Acts 19-21.pdf"),
+    6342: (13, "Acts 19-21.pptx"),
+    6345: (14, "6345 - Handout week 14 - Acts 22-24.pdf"),
+    6346: (14, "6346 - Acts 22-24.pdf"),
+    6347: (14, "6347 - Appendix 11 - Power of Testimony Acts 22.pdf"),
+    6350: (15, "6350 - Handout week 15 - Acts 25-26.pdf"),
+    6351: (15, "6351 - Acts 25-26.pdf"),
+    6355: (16, "6355 - Handout week 15 - Acts 27-28.pdf"),
+    6356: (16, "6356 - Acts 27-28.pdf"),
+}
+
 
 def normalized_name(value: str) -> str:
     value = unquote(value or "").lower()
@@ -41,6 +92,10 @@ def file_hash(path: Path) -> str:
 
 
 def is_confident_match(resource: dict, candidate: Path) -> bool:
+    resource_id = resource_id_from_url(resource.get("url", ""))
+    mapped = ACTS_DOWNLOADS.get(resource_id)
+    if mapped and candidate.name == mapped[1]:
+        return True
     title = normalized_name(resource.get("title", ""))
     filename = normalized_name(candidate.name)
     if not title or not filename:
@@ -57,6 +112,24 @@ def is_confident_match(resource: dict, candidate: Path) -> bool:
     return common == shorter and abs(len(title_words) - len(filename_words)) <= 1
 
 
+def resource_id_from_url(url: str) -> int | None:
+    match = re.search(r"[?&]id=(\d+)", url or "")
+    return int(match.group(1)) if match else None
+
+
+def enriched_resource(resource: dict) -> dict:
+    result = dict(resource)
+    mapped = ACTS_DOWNLOADS.get(resource_id_from_url(resource.get("url", "")))
+    if mapped and mapped[0] is not None:
+        result["week_number"] = mapped[0]
+        result["week_title"] = f"Week {mapped[0]}"
+    return result
+
+
+def clean_destination_name(name: str) -> str:
+    return re.sub(r"^\d+\s*-\s*", "", name)
+
+
 def destination_dir(course_root: Path, resource: dict) -> Path:
     subdir = RESOURCE_SUBDIRS.get(resource.get("kind", "resource"), "additional_materials")
     week_number = resource.get("week_number")
@@ -69,7 +142,7 @@ def destination_dir(course_root: Path, resource: dict) -> Path:
 
 def safe_copy(source: Path, destination_dir_path: Path) -> tuple[Path, str]:
     destination_dir_path.mkdir(parents=True, exist_ok=True)
-    destination = destination_dir_path / source.name
+    destination = destination_dir_path / clean_destination_name(source.name)
     if destination.exists():
         if destination.stat().st_size == source.stat().st_size and file_hash(destination) == file_hash(source):
             return destination, "already_present"
@@ -93,7 +166,8 @@ def process_manifest(manifest_path: Path, download_files: list[Path]) -> dict:
     unmatched = []
 
     remaining = []
-    for resource in queued:
+    for raw_resource in queued:
+        resource = enriched_resource(raw_resource)
         matches = [path for path in download_files if is_confident_match(resource, path)]
         if len(matches) == 1:
             source = matches[0]
@@ -110,10 +184,10 @@ def process_manifest(manifest_path: Path, download_files: list[Path]) -> dict:
                 data["downloaded_resources"].append(record)
         elif len(matches) > 1:
             ambiguous.append({"resource": resource, "matches": [str(path) for path in matches]})
-            remaining.append(resource)
+            remaining.append(raw_resource)
         else:
             unmatched.append(resource)
-            remaining.append(resource)
+            remaining.append(raw_resource)
 
     data["queued_resources"] = remaining
     if imported:
