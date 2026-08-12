@@ -54,6 +54,11 @@ EXISTING_CHURCH_SOURCE_MAP = {
     ],
 }
 
+EXCLUDED_CHURCHES = {
+    ("Wyoming", "High Plains Christian Fellowship"):
+        "Excluded by owner request; personal sermon notes are already indexed separately.",
+}
+
 
 @dataclass
 class PageLinks:
@@ -203,6 +208,14 @@ def load_existing_sources() -> list[tuple[str, str]]:
 
 def audit_church(record: tuple[str, str, str], existing: list[tuple[str, str]]) -> ChurchAudit:
     region, church, website = record
+    if (region, church) in EXCLUDED_CHURCHES:
+        return ChurchAudit(
+            region,
+            church,
+            website,
+            "excluded",
+            note=EXCLUDED_CHURCHES[(region, church)],
+        )
     if not website:
         return ChurchAudit(region, church, website, "no_website", note="The LFF directory does not provide a website link.")
 
@@ -305,6 +318,7 @@ def write_report(results: list[ChurchAudit]) -> None:
         "no_archive_found": "No sermon archive found from the public website",
         "unreachable": "Website unavailable during audit",
         "no_website": "No website supplied by the LFF directory",
+        "excluded": "Excluded from intake",
     }
     for status, label in labels.items():
         lines.append(f"- {label}: {counts.get(status, 0)}")

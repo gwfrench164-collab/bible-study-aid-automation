@@ -63,6 +63,10 @@ For example, `update_bible_study_aid.sh backlog 1 churches` takes one new sermon
 from each registered LFF church source without first working through the other
 podcast feeds.
 
+High Plains Christian Fellowship is intentionally excluded from online sermon
+intake because the owner's sermon notes are already indexed as the authoritative
+local source.
+
 ## How generated content is handled
 
 Some content is created or downloaded by the automation system and stored inside the `Bible_Study_Aid` folder.
