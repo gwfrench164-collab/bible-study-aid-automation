@@ -29,6 +29,7 @@ LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
+PAUSE_SECONDS="${BIBLE_STUDY_PAUSE_SECONDS:-5}"
 
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR"
 
@@ -37,6 +38,7 @@ LOG_FILE="$LOG_DIR/update_$(date +%Y%m%d_%H%M%S).log"
 echo "Starting Bible Study Aid update..." | tee -a "$LOG_FILE"
 echo "Mode: $MODE" | tee -a "$LOG_FILE"
 echo "Limit per source: $LIMIT" | tee -a "$LOG_FILE"
+echo "Pause between transcriptions: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
 if [ ! -f "$SOURCES_FILE" ]; then
@@ -134,8 +136,8 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
             [ -f "$file" ] && rm "$file"
 
             echo "Deleted MP3 and extra subtitle files." | tee -a "$LOG_FILE"
-            echo "Pausing 30 seconds before next file..." | tee -a "$LOG_FILE"
-            sleep 30
+            echo "Pausing ${PAUSE_SECONDS} seconds before next file..." | tee -a "$LOG_FILE"
+            sleep "$PAUSE_SECONDS"
         else
             echo "Transcript failed for: $(basename "$file")" | tee -a "$LOG_FILE"
         fi

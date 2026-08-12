@@ -36,9 +36,14 @@ This includes:
 - current LFBI course output
 - the legacy LFBI collection under `Documents/Spiritual/LFBI`
 - Sermon Notes
+- the separate local Sermons folder
 - Reference
 
 These paths are defined in `source_folders.tsv`.
+
+Podcast backlog runs pause briefly between transcriptions. The default is five
+seconds and can be adjusted with `BIBLE_STUDY_PAUSE_SECONDS` if the computer
+needs a longer cooling interval.
 
 ## How generated content is handled
 

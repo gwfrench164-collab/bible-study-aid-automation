@@ -12,6 +12,7 @@ SOURCE_TYPE_BY_KEY = {
     "LFBI": "lfbi",
     "LFBI Legacy": "lfbi",
     "Sermon Notes": "sermon_note",
+    "Sermons": "sermon_note",
     "Reference": "commentary",
 }
 
