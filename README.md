@@ -54,6 +54,11 @@ JSON report. Verified church feeds and video channels are registered separately
 in `lff_church_sources.tsv`; the normal updater processes both RSS and YouTube
 sources while using the same archive and transcript safeguards.
 
+The updater's optional third argument selects `all`, `podcasts`, or `churches`.
+For example, `update_bible_study_aid.sh backlog 1 churches` takes one new sermon
+from each registered LFF church source without first working through the other
+podcast feeds.
+
 ## How generated content is handled
 
 Some content is created or downloaded by the automation system and stored inside the `Bible_Study_Aid` folder.

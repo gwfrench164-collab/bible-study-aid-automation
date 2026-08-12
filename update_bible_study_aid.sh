@@ -30,6 +30,7 @@ LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
+SOURCE_GROUP="${3:-all}"
 PAUSE_SECONDS="${BIBLE_STUDY_PAUSE_SECONDS:-5}"
 
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR"
@@ -39,6 +40,7 @@ LOG_FILE="$LOG_DIR/update_$(date +%Y%m%d_%H%M%S).log"
 echo "Starting Bible Study Aid update..." | tee -a "$LOG_FILE"
 echo "Mode: $MODE" | tee -a "$LOG_FILE"
 echo "Limit per source: $LIMIT" | tee -a "$LOG_FILE"
+echo "Source group: $SOURCE_GROUP" | tee -a "$LOG_FILE"
 echo "Pause between transcriptions: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
@@ -48,6 +50,21 @@ for REGISTRY_FILE in "$SOURCES_FILE" "$LFF_SOURCES_FILE"; do
         exit 1
     fi
 done
+
+if [ "$SOURCE_GROUP" != "all" ] && [ "$SOURCE_GROUP" != "podcasts" ] && [ "$SOURCE_GROUP" != "churches" ]; then
+    echo "Unknown source group '$SOURCE_GROUP'; expected all, podcasts, or churches." | tee -a "$LOG_FILE"
+    exit 2
+fi
+
+emit_selected_sources() {
+    if [ "$SOURCE_GROUP" = "podcasts" ]; then
+        cat "$SOURCES_FILE"
+    elif [ "$SOURCE_GROUP" = "churches" ]; then
+        cat "$LFF_SOURCES_FILE"
+    else
+        cat "$SOURCES_FILE" "$LFF_SOURCES_FILE"
+    fi
+}
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
@@ -147,7 +164,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     done
 
     echo "" | tee -a "$LOG_FILE"
-done < <(cat "$SOURCES_FILE" "$LFF_SOURCES_FILE")
+done < <(emit_selected_sources)
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing completed LFBI browser downloads..." | tee -a "$LOG_FILE"

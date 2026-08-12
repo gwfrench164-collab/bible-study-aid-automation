@@ -18,7 +18,10 @@ from urllib.request import Request, urlopen
 BASE = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid"
 AUTOMATION_DIR = Path(__file__).resolve().parent
 DIRECTORY_FILE = AUTOMATION_DIR / "lff_church_directory.tsv"
-PODCAST_FILE = AUTOMATION_DIR / "podcast_sources.tsv"
+SOURCE_FILES = [
+    AUTOMATION_DIR / "podcast_sources.tsv",
+    AUTOMATION_DIR / "lff_church_sources.tsv",
+]
 REPORT_PATH = BASE / "99_Index" / "LFF_Church_Sermon_Audit.md"
 JSON_REPORT_PATH = BASE / "99_Index" / "lff_church_sermon_audit.json"
 
@@ -188,12 +191,13 @@ def load_directory() -> list[tuple[str, str, str]]:
 
 def load_existing_sources() -> list[tuple[str, str]]:
     sources = []
-    if not PODCAST_FILE.exists():
-        return sources
-    for raw_line in PODCAST_FILE.read_text(encoding="utf-8").splitlines():
-        parts = raw_line.split("|")
-        if len(parts) >= 3:
-            sources.append((parts[0].strip(), parts[2].strip()))
+    for path in SOURCE_FILES:
+        if not path.exists():
+            continue
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
+            parts = raw_line.split("|")
+            if len(parts) >= 3 and not raw_line.startswith("#"):
+                sources.append((parts[0].strip(), parts[2].strip()))
     return sources
 
 
@@ -204,9 +208,14 @@ def audit_church(record: tuple[str, str, str], existing: list[tuple[str, str]]) 
 
     existing_matches = list(EXISTING_CHURCH_SOURCE_MAP.get((region, church), []))
     website_host = normalized_host(website)
+    church_key = re.sub(r"[^a-z0-9]+", "", church.lower())
     for name, url in existing:
         if website_host and website_host == normalized_host(url):
             existing_matches.append(name)
+        elif name.startswith("LFF_"):
+            source_key = re.sub(r"[^a-z0-9]+", "", name[4:].lower())
+            if church_key and (church_key in source_key or source_key in church_key):
+                existing_matches.append(name)
 
     home = fetch(website)
     if home.error:
