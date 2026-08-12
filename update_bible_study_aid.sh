@@ -24,6 +24,8 @@ ARCHIVE_DIR="$AUTOMATION_DIR/archives"
 LFF_BLOG_IMPORTER="$AUTOMATION_DIR/import_lff_blog.py"
 COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
+COVERAGE_REPORTER="$AUTOMATION_DIR/report_library_status.py"
+LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
@@ -143,6 +145,18 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 done < "$SOURCES_FILE"
 
 echo "========================================" | tee -a "$LOG_FILE"
+echo "Importing completed LFBI browser downloads..." | tee -a "$LOG_FILE"
+
+if [ -f "$LFBI_DOWNLOAD_IMPORTER" ]; then
+    /usr/local/bin/python3.14 "$LFBI_DOWNLOAD_IMPORTER" >> "$LOG_FILE" 2>&1
+    echo "LFBI browser-download intake complete." | tee -a "$LOG_FILE"
+else
+    echo "LFBI download importer not found: $LFBI_DOWNLOAD_IMPORTER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
 echo "Building searchable index..." | tee -a "$LOG_FILE"
 
 if [ -f "$COMMENTARIES_IMPORTER" ]; then
@@ -162,6 +176,18 @@ if [ -f "$SCRIPTURE_INDEXER" ]; then
     echo "Scripture index complete." | tee -a "$LOG_FILE"
 else
     echo "Scripture indexer not found: $SCRIPTURE_INDEXER" | tee -a "$LOG_FILE"
+fi
+
+echo "" | tee -a "$LOG_FILE"
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Writing library coverage report..." | tee -a "$LOG_FILE"
+
+if [ -f "$COVERAGE_REPORTER" ]; then
+    /usr/local/bin/python3.14 "$COVERAGE_REPORTER" >> "$LOG_FILE" 2>&1
+    echo "Library coverage report complete." | tee -a "$LOG_FILE"
+else
+    echo "Coverage reporter not found: $COVERAGE_REPORTER" | tee -a "$LOG_FILE"
 fi
 
 echo "" | tee -a "$LOG_FILE"

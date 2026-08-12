@@ -328,7 +328,7 @@ PAGE_TEMPLATE = """
                                 <div class="result-title">{{ item.title }}</div>
                                 <div class="badges">
                                     <span class="badge">{{ item.source_type }}</span>
-                                    <span class="badge badge-muted">score {{ item.score }}</span>
+                                    {% if item.context %}<span class="badge badge-muted">{{ item.context }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
@@ -435,6 +435,38 @@ def filter_results_by_source_types(results, selected_source_types):
         return results
     allowed = set(selected_source_types)
     return [item for item in results if item.get("source_type") in allowed]
+
+
+def add_result_context(results):
+    enriched = []
+    for item in results:
+        updated = deepcopy(item)
+        path = Path(item.get("path", ""))
+        parts = list(path.parts[:-1])
+        context_parts = []
+
+        if item.get("source_type") == "lfbi":
+            if "02_LFBI" in parts:
+                start = parts.index("02_LFBI") + 1
+                context_parts = parts[start:start + 2]
+            elif "LFBI" in parts:
+                start = parts.index("LFBI") + 1
+                context_parts = parts[start:start + 2]
+        elif item.get("source_type") == "podcast" and "05_Podcasts" in parts:
+            start = parts.index("05_Podcasts") + 1
+            context_parts = parts[start:start + 1]
+        elif item.get("source_type") == "sermon_note":
+            context_parts = parts[-2:]
+        elif item.get("source_type") == "commentary":
+            context_parts = parts[-2:]
+        elif item.get("source_type") == "blog":
+            context_parts = parts[-1:]
+
+        updated["context"] = " / ".join(
+            part.replace("_", " ") for part in context_parts if part
+        )
+        enriched.append(updated)
+    return enriched
 
 
 def resolve_result_path(stored_path: str) -> Path:
@@ -564,8 +596,8 @@ def render_page(query, selected_source_types, limit, results, searched):
         selected_source_types=selected_source_types,
         selected_source_labels=[source_type_label(x) for x in selected_source_types],
         limit=limit,
-        results=results,
-        grouped_results=group_results(results),
+        results=add_result_context(results),
+        grouped_results=group_results(add_result_context(results)),
         searched=searched,
     )
 
@@ -590,8 +622,7 @@ def reveal_in_finder():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
         results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)
@@ -664,8 +695,7 @@ def open_source():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
         results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)
@@ -681,8 +711,7 @@ def index():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=max(limit * 2, 30))
-        raw_results = filter_results_by_source_types(raw_results, selected_source_types)
+        raw_results = qbs.run_query(query, limit=max(limit * 2, 30), source_types=selected_source_types)
         results = apply_highlighting(raw_results[:limit], query)
 
     return render_page(query, selected_source_types, limit, results, searched)

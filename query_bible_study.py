@@ -279,11 +279,21 @@ def build_snippet(text: str, query: str, topic_terms=None, query_reference=None)
     return snippet
 
 
-def run_query(query: str, limit: int = 20):
+def run_query(query: str, limit: int = 20, source_types=None):
     query_tokens = normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     topic_terms = get_topic_expansion_terms(query)
     topic_rules = get_topic_anchor_rules(query) or {}
+    selected_source_types = []
+    for source_type in source_types or []:
+        if source_type and source_type not in selected_source_types:
+            selected_source_types.append(source_type)
+    source_clause = ""
+    source_params = []
+    if selected_source_types:
+        placeholders = ", ".join("?" for _ in selected_source_types)
+        source_clause = f" AND d.source_type IN ({placeholders})"
+        source_params = selected_source_types
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -293,7 +303,7 @@ def run_query(query: str, limit: int = 20):
 
         if query_reference:
             ref_rows = conn.execute(
-                """
+                f"""
                 SELECT
                     c.id AS chunk_id,
                     d.title,
@@ -304,7 +314,7 @@ def run_query(query: str, limit: int = 20):
                 FROM chunk_refs cr
                 JOIN chunks c ON c.id = cr.chunk_id
                 JOIN documents d ON d.id = c.document_id
-                WHERE cr.scripture_ref = ?
+                WHERE cr.scripture_ref = ?{source_clause}
                 GROUP BY c.id, d.title, d.rel_path, d.source_type, c.content
                 ORDER BY
                     CASE d.source_type
@@ -317,7 +327,7 @@ def run_query(query: str, limit: int = 20):
                     d.title
                 LIMIT ?
                 """,
-                (query_reference, limit)
+                (query_reference, *source_params, limit)
             ).fetchall()
 
             for row in ref_rows:
@@ -332,7 +342,7 @@ def run_query(query: str, limit: int = 20):
         fts_query = make_fts_query(query, query_tokens, topic_terms)
         if fts_query:
             fts_rows = conn.execute(
-                """
+                f"""
                 SELECT
                     c.id AS chunk_id,
                     d.title,
@@ -343,11 +353,11 @@ def run_query(query: str, limit: int = 20):
                 FROM chunks_fts
                 JOIN chunks c ON c.id = chunks_fts.rowid
                 JOIN documents d ON d.id = c.document_id
-                WHERE chunks_fts MATCH ?
+                WHERE chunks_fts MATCH ?{source_clause}
                 ORDER BY rank
                 LIMIT 100
                 """,
-                (fts_query,)
+                (fts_query, *source_params)
             ).fetchall()
 
             for row in fts_rows:

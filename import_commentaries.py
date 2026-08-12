@@ -8,10 +8,17 @@ BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_St
 DB_PATH = BASE / "99_Index" / "bible_study.db"
 SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
 
-def load_local_source_dirs() -> list[Path]:
-    dirs: list[Path] = []
+SOURCE_TYPE_BY_KEY = {
+    "LFBI": "lfbi",
+    "LFBI Legacy": "lfbi",
+    "Sermon Notes": "sermon_note",
+    "Reference": "commentary",
+}
+
+def load_local_sources() -> list[tuple[Path, str]]:
+    sources: list[tuple[Path, str]] = []
     if not SOURCE_REGISTRY.exists():
-        return dirs
+        return sources
 
     for raw_line in SOURCE_REGISTRY.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
@@ -25,15 +32,17 @@ def load_local_source_dirs() -> list[Path]:
         key = parts[0].strip()
         source_path = parts[1].strip()
 
-        if key in {"LFBI", "Sermon Notes", "Reference"} and source_path:
-            dirs.append(Path(source_path))
+        source_type = SOURCE_TYPE_BY_KEY.get(key)
+        if source_type and source_path:
+            sources.append((Path(source_path), source_type))
 
-    return dirs
+    return sources
 
 
-SEARCH_FOLDERS = load_local_source_dirs() + [
-    BASE / "05_Podcasts",
-    BASE / "06_Blogs",
+LOCAL_SOURCES = load_local_sources()
+SEARCH_SOURCES = LOCAL_SOURCES + [
+    (BASE / "05_Podcasts", "podcast"),
+    (BASE / "06_Blogs", "blog"),
 ]
 
 READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pages"}
@@ -77,28 +86,26 @@ def normalize_reference(match: re.Match) -> str:
 
 
 def guess_source_type(path: Path) -> str:
-    path_str = str(path)
-    if "/Users/george/Documents/Spiritual/Reference/" in path_str:
-        return "commentary"
-    if "/Users/george/Documents/Spiritual/Church/Sermon Notes/" in path_str:
-        return "sermon_note"
-    if "/Users/george/Documents/Spiritual/LFBI/" in path_str:
-        return "lfbi"
-    if "/05_Podcasts/" in path_str:
-        return "podcast"
-    if "/06_Blogs/" in path_str:
-        return "blog"
+    resolved_path = path.resolve()
+    for source_root, source_type in SEARCH_SOURCES:
+        try:
+            resolved_path.relative_to(source_root.resolve())
+            return source_type
+        except ValueError:
+            continue
     return "unknown"
 
 
 def collect_files() -> list[Path]:
     files = []
-    for folder in SEARCH_FOLDERS:
+    seen = set()
+    for folder, _source_type in SEARCH_SOURCES:
         if not folder.exists():
             continue
         for path in folder.rglob("*"):
-            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES:
+            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES and path not in seen:
                 files.append(path)
+                seen.add(path)
     return files
 
 
@@ -299,14 +306,14 @@ def get_rel_path(path: Path) -> str:
 
 
 
-def get_existing_document(conn: sqlite3.Connection, rel_path: str) -> tuple[int, float | None] | None:
+def get_existing_document(conn: sqlite3.Connection, rel_path: str) -> tuple[int, float | None, str] | None:
     row = conn.execute(
-        "SELECT id, modified_time FROM documents WHERE rel_path = ?",
+        "SELECT id, modified_time, source_type FROM documents WHERE rel_path = ?",
         (rel_path,),
     ).fetchone()
     if row is None:
         return None
-    return row[0], row[1]
+    return row[0], row[1], row[2]
 
 
 
@@ -346,10 +353,12 @@ def index_file(conn: sqlite3.Connection, path: Path) -> None:
 
     existing = get_existing_document(conn, rel_path)
     if existing is not None:
-        existing_id, existing_modified_time = existing
-        if existing_modified_time == modified_time:
+        existing_id, existing_modified_time, existing_source_type = existing
+        if existing_modified_time == modified_time and existing_source_type == source_type:
             print(f"Skipped unchanged: {rel_path}")
             return
+        if existing_modified_time == modified_time and existing_source_type != source_type:
+            print(f"Reclassifying: {rel_path} ({existing_source_type} -> {source_type})")
         delete_document_by_id(conn, existing_id)
 
     text = read_text(path)
