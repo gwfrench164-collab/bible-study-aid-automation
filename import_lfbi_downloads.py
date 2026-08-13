@@ -24,6 +24,11 @@ RESOURCE_SUBDIRS = {
     "other": "additional_materials",
 }
 
+GENERIC_RESOURCE_WORDS = {
+    "week", "wk", "lesson", "handout", "handouts", "slide", "slides",
+    "syllabus", "schedule", "class", "course", "material", "materials",
+}
+
 # Resource IDs are stable Moodle identifiers.  They let us safely recognize
 # downloads whose visible titles are generic (for example, many files are just
 # called "Slides") and preserve the week shown in Moodle's breadcrumb.
@@ -102,6 +107,10 @@ def is_confident_match(resource: dict, candidate: Path) -> bool:
     title = normalized_name(resource.get("title", ""))
     filename = normalized_name(candidate.name)
     if not title or not filename:
+        return False
+    title_specific = [word for word in title.split() if word not in GENERIC_RESOURCE_WORDS and not word.isdigit()]
+    filename_specific = [word for word in filename.split() if word not in GENERIC_RESOURCE_WORDS and not word.isdigit()]
+    if not title_specific or not filename_specific:
         return False
     if title == filename:
         return True

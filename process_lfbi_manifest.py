@@ -486,6 +486,8 @@ def try_youtube_captions(video_url: str, transcript_dir: Path, work_dir: Path, t
         sys.executable,
         "-m",
         "yt_dlp",
+        "--remote-components",
+        "ejs:github",
         "--skip-download",
         "--write-auto-subs",
         "--write-subs",
@@ -519,7 +521,18 @@ def try_youtube_captions(video_url: str, transcript_dir: Path, work_dir: Path, t
 
 def try_whisper_fallback(video_url: str, transcript_dir: Path, work_dir: Path, title: str) -> Optional[Path]:
     audio_template = work_dir / f"{slugify(title)}_audio"
-    download_command = [sys.executable, "-m", "yt_dlp", "-f", "bestaudio/best", "-o", str(audio_template) + ".%(ext)s", video_url]
+    download_command = [
+        sys.executable,
+        "-m",
+        "yt_dlp",
+        "--remote-components",
+        "ejs:github",
+        "-f",
+        "bestaudio/best",
+        "-o",
+        str(audio_template) + ".%(ext)s",
+        video_url,
+    ]
     download_result = run_command(download_command)
     if download_result.returncode != 0:
         if download_result.stderr:
