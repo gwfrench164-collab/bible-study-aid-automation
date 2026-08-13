@@ -298,6 +298,20 @@ def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[
             if same_course and isinstance(video.get("week_number"), int):
                 by_week.setdefault(video["week_number"], reusable)
 
+        # Some early processed courses have transcripts on disk but no video
+        # entries in their processed manifest. Retakes can still reuse them.
+        if same_course:
+            for transcript_path in summary_path.parent.glob("Week_*/transcripts/*.txt"):
+                week_match = re.search(r"\bWeek[_ -]*(\d+)(?!\d)", str(transcript_path), re.IGNORECASE)
+                if not week_match:
+                    continue
+                week_number = int(week_match.group(1))
+                by_week.setdefault(week_number, {
+                    "transcript_path": transcript_path,
+                    "course_title": prior_title,
+                    "week_number": week_number,
+                })
+
     return by_url, by_week
 
 
