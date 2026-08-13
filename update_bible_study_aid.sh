@@ -27,6 +27,8 @@ COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 COVERAGE_REPORTER="$AUTOMATION_DIR/report_library_status.py"
 LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
+PYTHON_BIN="/usr/local/bin/python3.14"
+YT_DLP=("$PYTHON_BIN" -m yt_dlp)
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
@@ -43,6 +45,11 @@ echo "Limit per source: $LIMIT" | tee -a "$LOG_FILE"
 echo "Source group: $SOURCE_GROUP" | tee -a "$LOG_FILE"
 echo "Pause between transcriptions: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
+
+if [ "$MODE" != "backlog" ] && [ "$MODE" != "latest" ] && [ "$MODE" != "index" ]; then
+    echo "Unknown mode '$MODE'; expected backlog, latest, or index." | tee -a "$LOG_FILE"
+    exit 2
+fi
 
 for REGISTRY_FILE in "$SOURCES_FILE" "$LFF_SOURCES_FILE"; do
     if [ ! -f "$REGISTRY_FILE" ]; then
@@ -66,6 +73,7 @@ emit_selected_sources() {
     fi
 }
 
+if [ "$MODE" != "index" ]; then
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
 
@@ -80,6 +88,7 @@ echo "" | tee -a "$LOG_FILE"
 
 while IFS='|' read -r NAME TYPE URL DEST_REL; do
     [ -z "$NAME" ] && continue
+    [[ "$NAME" == \#* ]] && continue
 
     DEST_DIR="$BASE/$DEST_REL"
     ARCHIVE_FILE="$ARCHIVE_DIR/${NAME}_downloaded.txt"
@@ -100,7 +109,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     if [ "$MODE" = "backlog" ]; then
         echo "Downloading up to $LIMIT new episodes..." | tee -a "$LOG_FILE"
 
-        yt-dlp \
+        "${YT_DLP[@]}" \
             --download-archive "$ARCHIVE_FILE" \
             --max-downloads "$LIMIT" \
             -x \
@@ -110,7 +119,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     else
         echo "Downloading new episodes..." | tee -a "$LOG_FILE"
 
-        yt-dlp \
+        "${YT_DLP[@]}" \
             --download-archive "$ARCHIVE_FILE" \
             -x \
             --audio-format mp3 \
@@ -133,6 +142,9 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 
         if [ -f "$TXT_FILE" ]; then
             echo "Transcript already exists, deleting leftover MP3: $(basename "$file")" | tee -a "$LOG_FILE"
+            for sidecar in "${file%.mp3}.srt" "${file%.mp3}.tsv" "${file%.mp3}.vtt" "${file%.mp3}.json"; do
+                [ -f "$sidecar" ] && rm "$sidecar"
+            done
             [ -f "$file" ] && rm "$file"
             continue
         fi
@@ -149,10 +161,12 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
             SRT_FILE="${file%.mp3}.srt"
             TSV_FILE="${file%.mp3}.tsv"
             VTT_FILE="${file%.mp3}.vtt"
+            JSON_FILE="${file%.mp3}.json"
 
             [ -f "$SRT_FILE" ] && rm "$SRT_FILE"
             [ -f "$TSV_FILE" ] && rm "$TSV_FILE"
             [ -f "$VTT_FILE" ] && rm "$VTT_FILE"
+            [ -f "$JSON_FILE" ] && rm "$JSON_FILE"
             [ -f "$file" ] && rm "$file"
 
             echo "Deleted MP3 and extra subtitle files." | tee -a "$LOG_FILE"
@@ -165,6 +179,9 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
 
     echo "" | tee -a "$LOG_FILE"
 done < <(emit_selected_sources)
+else
+    echo "Index-only mode: skipping blog, media download, and transcription." | tee -a "$LOG_FILE"
+fi
 
 echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing completed LFBI browser downloads..." | tee -a "$LOG_FILE"

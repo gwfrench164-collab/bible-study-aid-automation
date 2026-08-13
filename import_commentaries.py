@@ -1,6 +1,8 @@
 from pathlib import Path
 import sqlite3
 import re
+import hashlib
+import tempfile
 from datetime import datetime
 import subprocess
 
@@ -8,6 +10,7 @@ BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_St
 DB_PATH = BASE / "99_Index" / "bible_study.db"
 SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
 LFF_CHURCH_REGISTRY = Path(__file__).with_name("lff_church_sources.tsv")
+OCR_CACHE_DIR = Path(__file__).with_name("state") / "ocr_text"
 
 SOURCE_TYPE_BY_KEY = {
     "LFBI": "lfbi",
@@ -178,7 +181,51 @@ def read_pdf_text(path: Path) -> str:
     except Exception:
         pass
 
-    return ""
+    return read_pdf_text_with_ocr(path)
+
+
+def read_pdf_text_with_ocr(path: Path) -> str:
+    """OCR scanned PDFs only after the normal text extractors find nothing."""
+    try:
+        stat = path.stat()
+        cache_key = hashlib.sha256(
+            f"{path.resolve()}|{stat.st_size}|{stat.st_mtime_ns}".encode("utf-8")
+        ).hexdigest()
+        OCR_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_path = OCR_CACHE_DIR / f"{cache_key}.txt"
+        if cache_path.exists():
+            return cache_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return ""
+
+    print(f"OCR fallback: {path}")
+    pieces = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="bible_study_ocr_") as temp_dir:
+            image_prefix = Path(temp_dir) / "page"
+            rendered = subprocess.run(
+                ["pdftoppm", "-jpeg", "-r", "160", str(path), str(image_prefix)],
+                capture_output=True,
+                text=True,
+            )
+            if rendered.returncode != 0:
+                return ""
+
+            for image_path in sorted(Path(temp_dir).glob("page-*.jpg")):
+                result = subprocess.run(
+                    ["tesseract", str(image_path), "stdout", "-l", "eng", "--psm", "6"],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    pieces.append(result.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+    text = "\n\n".join(pieces).strip()
+    if text:
+        cache_path.write_text(text + "\n", encoding="utf-8")
+    return text
 
 
 def read_docx_text(path: Path) -> str:

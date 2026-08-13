@@ -63,6 +63,10 @@ For example, `update_bible_study_aid.sh backlog 1 churches` takes one new sermon
 from each registered LFF church source without first working through the other
 podcast feeds.
 
+Use `update_bible_study_aid.sh index` to import completed LFBI downloads and
+rebuild the searchable and scripture indexes without waiting for any podcast or
+church-media work. Registry comment/header rows are ignored automatically.
+
 High Plains Christian Fellowship is intentionally excluded from online sermon
 intake because the owner's sermon notes are already indexed as the authoritative
 local source.
@@ -98,6 +102,9 @@ status reports:
 
 These show indexed document counts, registered local sources, podcast backlog
 estimates, feed errors, and LFBI course/resource status.
+
+Scanned PDFs that contain no embedded text use a cached OCR fallback during
+indexing. Ordinary text PDFs continue through the faster native extractors.
 
 ## Legacy files
 
