@@ -111,6 +111,14 @@ estimates, feed errors, and LFBI course/resource status.
 Scanned PDFs that contain no embedded text use a cached OCR fallback during
 indexing. Ordinary text PDFs continue through the faster native extractors.
 
+## Search and reading
+
+The local search app returns one ranked card per document, supports source and
+match-mode filters, and expands several common study topics. Source-count pills
+can be clicked to narrow the current search. Text and Markdown results open in a
+built-in reading view with highlighted matches, adjustable text size, and a link
+back to the search results; other document formats open in their normal Mac app.
+
 ## Legacy files
 
 Some older files are still in the repo but are no longer part of the main live update flow.

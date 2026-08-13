@@ -8,6 +8,7 @@ import webbrowser
 from copy import deepcopy
 from flask import Flask, request, render_template_string, abort, Response
 from html import escape
+from urllib.parse import urlencode
 from werkzeug.serving import make_server
 
 AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
@@ -142,12 +143,23 @@ PAGE_TEMPLATE = """
             margin-bottom: 14px;
         }
         .summary-pill {
+            display: inline-block;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 999px;
             padding: 6px 11px;
             color: #475569;
             font-size: 0.88rem;
+            text-decoration: none;
+        }
+        .summary-pill:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .summary-pill.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-color: #93c5fd;
         }
         .group-section {
             margin-bottom: 18px;
@@ -219,6 +231,11 @@ PAGE_TEMPLATE = """
             font-weight: 700;
             margin: 0;
         }
+        .result-number {
+            color: var(--muted);
+            font-weight: 600;
+            margin-right: 6px;
+        }
         .badges {
             display: flex;
             flex-wrap: wrap;
@@ -283,6 +300,22 @@ PAGE_TEMPLATE = """
             border-radius: 6px;
             font-size: 0.95em;
         }
+        .example-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .example-link {
+            display: inline-block;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--accent);
+            text-decoration: none;
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-weight: 600;
+        }
         @media (max-width: 980px) {
             .search-row {
                 grid-template-columns: 1fr;
@@ -346,7 +379,8 @@ PAGE_TEMPLATE = """
             <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
             {% if grouped_results %}
             <div class="results-summary">
-                {% for group in grouped_results %}<span class="summary-pill">{{ group['label'] }}: {{ group['count'] }}</span>{% endfor %}
+                {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit) }}">All sources</a>{% endif %}
+                {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
             </div>
             {% endif %}
 
@@ -359,7 +393,7 @@ PAGE_TEMPLATE = """
                     <div class="result-card">
                         <div class="result-top">
                             <div>
-                                <div class="result-title">{{ item.title }}</div>
+                                <div class="result-title"><span class="result-number">{{ item.display_number }}.</span>{{ item.title }}</div>
                                 <div class="badges">
                                     <span class="badge">{{ item.source_type }}</span>
                                     {% if item.context %}<span class="badge badge-muted">{{ item.context }}</span>{% endif %}
@@ -368,7 +402,7 @@ PAGE_TEMPLATE = """
                         </div>
                         <div class="snippet">{{ item.snippet | safe }}</div>
                         <div class="result-actions">
-                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Open Source</a>
+                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Read Source</a>
                             <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Show in Finder</a>
                         </div>
                         <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
@@ -383,6 +417,12 @@ PAGE_TEMPLATE = """
         {% else %}
             <div class="empty-state">
                 <div><strong>Welcome.</strong> Start with a search such as <strong>Romans 8</strong>, <strong>7 feasts of Israel</strong>, or <strong>6,000 years and 1,000 years of rest</strong>.</div>
+                <div class="example-links">
+                    <a class="example-link" href="/?q=Romans+8">Romans 8</a>
+                    <a class="example-link" href="/?q=7+feasts+of+Israel">Seven feasts of Israel</a>
+                    <a class="example-link" href="/?q=spiritual+leadership">Spiritual leadership</a>
+                    <a class="example-link" href="/?q=premillennial+rapture">Premillennial rapture</a>
+                </div>
                 <div class="quick-start">
                     <div><strong>Quick start:</strong></div>
                     <div>1. Type a Bible reference, topic, phrase, author, or book title in the search box.</div>
@@ -478,8 +518,9 @@ def filter_results_by_source_types(results, selected_source_types):
 
 def add_result_context(results):
     enriched = []
-    for item in results:
+    for display_number, item in enumerate(results, start=1):
         updated = deepcopy(item)
+        updated["display_number"] = display_number
         path = Path(item.get("path", ""))
         parts = list(path.parts[:-1])
         context_parts = []
@@ -536,6 +577,11 @@ def build_highlight_pattern(query: str):
         term = raw_term.strip()
         if len(term) >= 2:
             terms.append(term)
+
+    terms.extend(qbs.get_topic_expansion_terms(query))
+    query_reference = qbs.extract_query_reference(query)
+    if query_reference:
+        terms.append(query_reference)
 
     if not terms:
         return None
@@ -680,11 +726,21 @@ def open_source():
     except FileNotFoundError as e:
         return f"Open Source failed.\nRequested path: {rel_path}\nReason: {e}\n", 404
 
-    if full_path.suffix.lower() == ".txt":
+    query = request.args.get("q", "").strip()
+    selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
+    search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
+    limit = normalize_limit(request.args.get("limit", "20"))
+    return_args = [("q", query), ("mode", search_mode), ("limit", str(limit))]
+    return_args.extend(("source_types", value) for value in selected_source_types)
+    return_url = "/?" + urlencode(return_args)
+
+    if full_path.suffix.lower() in {".txt", ".md"}:
         try:
             text = full_path.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             text = full_path.read_text(errors="ignore")
+
+        content_html = highlight_text(text, build_highlight_pattern(query))
 
         html = f"""
         <!doctype html>
@@ -696,18 +752,49 @@ def open_source():
             <style>
                 body {{
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    font-size: 20px;
-                    line-height: 1.75;
-                    max-width: 900px;
-                    margin: 40px auto;
+                    font-size: 19px;
+                    line-height: 1.7;
+                    max-width: 980px;
+                    margin: 0 auto;
                     padding: 0 24px 60px;
                     background: #f7f7f7;
                     color: #111;
                 }}
+                .toolbar {{
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 0;
+                    background: rgba(247,247,247,0.96);
+                    border-bottom: 1px solid #d1d5db;
+                }}
+                .toolbar a, .toolbar button {{
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    background: white;
+                    color: #1d4ed8;
+                    padding: 8px 11px;
+                    text-decoration: none;
+                    font: inherit;
+                    font-size: 0.9rem;
+                    font-weight: 650;
+                    cursor: pointer;
+                }}
+                .font-controls {{ display: flex; gap: 6px; }}
                 h1 {{
                     font-size: 28px;
                     line-height: 1.25;
-                    margin-bottom: 24px;
+                    margin: 28px 0 8px;
+                }}
+                .location {{
+                    color: #64748b;
+                    font-size: 0.82rem;
+                    word-break: break-word;
+                    margin-bottom: 18px;
                 }}
                 .content {{
                     background: white;
@@ -717,22 +804,35 @@ def open_source():
                     white-space: pre-wrap;
                     word-wrap: break-word;
                 }}
+                mark {{ background: #fff3a3; padding: 0 2px; border-radius: 3px; }}
             </style>
         </head>
         <body>
+            <div class="toolbar">
+                <a href="{escape(return_url, quote=True)}">← Back to results</a>
+                <div class="font-controls">
+                    <button type="button" onclick="resizeText(-1)" aria-label="Decrease text size">A−</button>
+                    <button type="button" onclick="resizeText(1)" aria-label="Increase text size">A+</button>
+                </div>
+            </div>
             <h1>{escape(full_path.name)}</h1>
-            <div class="content">{escape(text)}</div>
+            <div class="location">{escape(rel_path)}</div>
+            <div class="content" id="source-content">{content_html}</div>
+            <script>
+                function resizeText(direction) {{
+                    const content = document.getElementById('source-content');
+                    const current = parseFloat(getComputedStyle(content).fontSize);
+                    content.style.fontSize = Math.max(14, Math.min(30, current + direction)) + 'px';
+                }}
+                const firstMatch = document.querySelector('mark');
+                if (firstMatch) firstMatch.scrollIntoView({{block: 'center'}});
+            </script>
         </body>
         </html>
         """
         return Response(html, mimetype="text/html")
 
     subprocess.run(["open", str(full_path)], check=False)
-
-    query = request.args.get("q", "").strip()
-    selected_source_types = normalize_selected_source_types(request.args.getlist("source_types"))
-    search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
-    limit = normalize_limit(request.args.get("limit", "20"))
 
     results = []
     searched = bool(query)

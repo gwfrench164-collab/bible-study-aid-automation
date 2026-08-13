@@ -421,7 +421,8 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                 if minimum_topic_matches is not None and topic_match_count < minimum_topic_matches:
                     bonus -= 80
 
-                score = int(500 - row["rank"] * 100 + bonus)
+                rank_value = row["rank"] if row["rank"] is not None else 0.0
+                score = int(500 - rank_value * 100 + bonus)
 
                 results.append({
                     "score": score,
@@ -441,15 +442,14 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
             deduped.append(item)
 
         final_results = []
-        path_counts = {}
+        seen_paths = set()
 
         for item in deduped:
-            count = path_counts.get(item["path"], 0)
-            if count >= 2:
+            if item["path"] in seen_paths:
                 continue
 
             final_results.append(item)
-            path_counts[item["path"]] = count + 1
+            seen_paths.add(item["path"])
 
             if len(final_results) >= limit:
                 break
