@@ -316,7 +316,7 @@ def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[
 
 
 def week_number_from_title(value: str) -> Optional[int]:
-    match = re.search(r"\bWeek\s+(\d+)\b", value or "", re.IGNORECASE)
+    match = re.search(r"\b(?:Week|Wk)[_\s-]*(\d+)(?!\d)", value or "", re.IGNORECASE)
     if not match:
         return None
     return int(match.group(1))
@@ -326,7 +326,7 @@ def canonical_week_title(manifest: dict, week_number: int) -> str:
     for week in weeks:
         if week_number_from_title(week) == week_number:
             cleaned = re.sub(r"\s+", " ", week).strip()
-            cleaned = re.sub(r"\bweek\s+\d+\b", "", cleaned, flags=re.IGNORECASE).strip(" -–:_")
+            cleaned = re.sub(r"\b(?:week|wk)[_\s-]*\d+(?!\d)", "", cleaned, flags=re.IGNORECASE).strip(" -–:_")
 
             # Ignore Moodle instruction labels that are not actual lesson titles.
             if re.search(r"watch\s+(the\s+)?lecture\s+first", cleaned, re.IGNORECASE):
