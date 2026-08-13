@@ -88,6 +88,11 @@ Authenticated Moodle files may be downloaded through Safari using a course's
 Downloads folder and safely copies unique, high-confidence matches into the
 correct LFBI course and week folders. It never deletes the original download.
 
+LFBI retakes are treated as another enrollment in the same canonical class.
+Matching resources are reused, and an existing week transcript is referenced
+instead of transcribing the same lecture again. Material that does not confidently
+match an earlier resource remains separate for review.
+
 The latest intake report is written to:
 
 - `99_Index/LFBI_Download_Intake.md`

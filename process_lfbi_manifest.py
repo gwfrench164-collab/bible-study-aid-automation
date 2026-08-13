@@ -251,6 +251,56 @@ def normalize_course_title(title: str) -> str:
     return title.strip() or "LFBI Course"
 
 
+def canonical_course_key(title: str) -> str:
+    """Identify the same LFBI class across different enrollment terms."""
+    value = normalize_course_title(title)
+    value = re.sub(r"\([^)]*\b[A-Z]{2,}\s*\d{2,4}\b[^)]*\)", " ", value, flags=re.IGNORECASE)
+    value = re.sub(r"\b(spring|summer|fall|autumn|winter)\s+\d{4}\b", " ", value, flags=re.IGNORECASE)
+    value = re.sub(r"\b20\d{2}\b", " ", value)
+    value = re.sub(r"\b(retake|second attempt|attempt\s*\d+)\b", " ", value, flags=re.IGNORECASE)
+    value = re.sub(r"\s+", " ", value).strip(" -–—:_")
+    return normalize_match_text(value) or normalize_match_text(title)
+
+
+def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[str, dict], dict[int, dict]]:
+    """Find prior transcripts by exact video URL or same-course week."""
+    current_key = canonical_course_key(manifest.get("course_title", ""))
+    by_url: dict[str, dict] = {}
+    by_week: dict[int, dict] = {}
+
+    for summary_path in LFBI_ROOT.rglob("course_manifest_processed.json"):
+        if summary_path.parent == course_root:
+            continue
+        try:
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        prior_title = summary.get("course_title", summary_path.parent.name)
+        same_course = canonical_course_key(prior_title) == current_key
+        for video in summary.get("processed_videos", []):
+            transcript_value = video.get("transcript_path")
+            if not transcript_value:
+                continue
+            transcript_path = Path(transcript_value)
+            if not transcript_path.is_absolute():
+                transcript_path = BASE / transcript_path
+            if not transcript_path.exists():
+                continue
+
+            reusable = {
+                "transcript_path": transcript_path,
+                "course_title": prior_title,
+                "week_number": video.get("week_number"),
+            }
+            if video.get("url"):
+                by_url.setdefault(video["url"], reusable)
+            if same_course and isinstance(video.get("week_number"), int):
+                by_week.setdefault(video["week_number"], reusable)
+
+    return by_url, by_week
+
+
 def week_number_from_title(value: str) -> Optional[int]:
     match = re.search(r"\bWeek\s+(\d+)\b", value or "", re.IGNORECASE)
     if not match:
@@ -497,10 +547,28 @@ def try_whisper_fallback(video_url: str, transcript_dir: Path, work_dir: Path, t
 def process_videos(manifest: dict, course_root: Path, captions_only: bool = False) -> list[dict]:
     videos = manifest.get("youtube_links", [])
     processed = []
+    reusable_by_url, reusable_by_week = reusable_video_transcripts(manifest, course_root)
 
     for index, video_url in enumerate(videos, start=1):
         week_number = index
         canonical_title = canonical_week_title(manifest, week_number)
+        reusable = reusable_by_url.get(video_url) or reusable_by_week.get(week_number)
+        if reusable:
+            transcript_path = reusable["transcript_path"]
+            print(
+                f"[FOUND] Reusing Week {week_number:02d} transcript from prior enrollment: "
+                f"{reusable['course_title']} -> {transcript_path}"
+            )
+            processed.append({
+                "week_number": week_number,
+                "week_title": canonical_title or f"Week {week_number}",
+                "url": video_url,
+                "transcript_path": str(transcript_path.relative_to(BASE)),
+                "strategy": "retake_reuse",
+                "reused_from_course": reusable["course_title"],
+            })
+            continue
+
         dirs = ensure_week_dirs(course_root, week_number, canonical_title)
 
         title = f"{normalize_course_title(manifest.get('course_title'))} - Week {week_number:02d}"
@@ -647,6 +715,7 @@ def write_processing_summary(course_root: Path, manifest: dict, downloaded: list
     summary = {
         "source_type": "lfbi",
         "course_title": normalize_course_title(manifest.get("course_title", "LFBI Course")),
+        "canonical_course_key": canonical_course_key(manifest.get("course_title", "LFBI Course")),
         "course_slug": course_root.name,
         "downloaded_resources": downloaded,
         "queued_resources": queued,
