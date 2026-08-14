@@ -572,14 +572,27 @@ def try_whisper_fallback(video_url: str, transcript_dir: Path, work_dir: Path, t
     return None
 
 def process_videos(manifest: dict, course_root: Path, captions_only: bool = False) -> list[dict]:
-    videos = manifest.get("youtube_links", [])
+    video_items = manifest.get("video_items")
+    if video_items:
+        videos = [
+            item if isinstance(item, dict) else {"url": item}
+            for item in video_items
+        ]
+    else:
+        videos = [{"url": url} for url in manifest.get("youtube_links", [])]
     processed = []
     reusable_by_url, reusable_by_week = reusable_video_transcripts(manifest, course_root)
 
-    for index, video_url in enumerate(videos, start=1):
-        week_number = index
-        canonical_title = canonical_week_title(manifest, week_number)
-        reusable = reusable_by_url.get(video_url) or reusable_by_week.get(week_number)
+    for index, video_item in enumerate(videos, start=1):
+        video_url = video_item.get("url")
+        if not video_url:
+            continue
+        week_number = int(video_item.get("week_number") or index)
+        part_number = video_item.get("part_number")
+        canonical_title = video_item.get("week_title") or canonical_week_title(manifest, week_number)
+        reusable = reusable_by_url.get(video_url)
+        if reusable is None and part_number in (None, 1, "1"):
+            reusable = reusable_by_week.get(week_number)
         if reusable:
             transcript_path = reusable["transcript_path"]
             print(
@@ -599,6 +612,8 @@ def process_videos(manifest: dict, course_root: Path, captions_only: bool = Fals
         dirs = ensure_week_dirs(course_root, week_number, canonical_title)
 
         title = f"{normalize_course_title(manifest.get('course_title'))} - Week {week_number:02d}"
+        if part_number:
+            title += f" - Part {part_number}"
 
         transcript_path = try_youtube_captions(video_url, dirs["transcripts"], dirs["work"], title)
         strategy = "captions"
@@ -612,6 +627,7 @@ def process_videos(manifest: dict, course_root: Path, captions_only: bool = Fals
         processed.append({
             "week_number": week_number,
             "week_title": canonical_title or f"Week {week_number}",
+            "part_number": part_number,
             "url": video_url,
             "transcript_path": str(transcript_path.relative_to(BASE)) if transcript_path else None,
             "strategy": strategy,
