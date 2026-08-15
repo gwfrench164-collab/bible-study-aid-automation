@@ -27,13 +27,20 @@ COMMENTARIES_IMPORTER="$AUTOMATION_DIR/import_commentaries.py"
 SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 COVERAGE_REPORTER="$AUTOMATION_DIR/report_library_status.py"
 LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
+TRANSCRIBER="$AUTOMATION_DIR/transcribe_audio_batch.py"
 PYTHON_BIN="/usr/local/bin/python3.14"
 YT_DLP=("$PYTHON_BIN" -m yt_dlp)
 
 MODE="${1:-backlog}"
 LIMIT="${2:-3}"
 SOURCE_GROUP="${3:-all}"
-PAUSE_SECONDS="${BIBLE_STUDY_PAUSE_SECONDS:-5}"
+PAUSE_SECONDS="${BIBLE_STUDY_COOLING_SECONDS:-${BIBLE_STUDY_PAUSE_SECONDS:-5}}"
+TRANSCRIPTION_BACKEND="${BIBLE_STUDY_TRANSCRIBER:-auto}"
+OPENAI_WHISPER_MODEL="${BIBLE_STUDY_WHISPER_MODEL:-base}"
+MLX_WHISPER_MODEL="${BIBLE_STUDY_MLX_MODEL:-mlx-community/whisper-base.en-mlx}"
+MLX_PYTHON="${BIBLE_STUDY_MLX_PYTHON:-$HOME/Library/Caches/BibleStudyAid/mlx-venv/bin/python}"
+TRANSCRIPTION_LIMIT="${BIBLE_STUDY_TRANSCRIPTION_LIMIT:-0}"
+TRANSCRIPTION_TIME_BUDGET="${BIBLE_STUDY_TRANSCRIPTION_TIME_BUDGET_MINUTES:-0}"
 
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR"
 
@@ -43,7 +50,10 @@ echo "Starting Bible Study Aid update..." | tee -a "$LOG_FILE"
 echo "Mode: $MODE" | tee -a "$LOG_FILE"
 echo "Limit per source: $LIMIT" | tee -a "$LOG_FILE"
 echo "Source group: $SOURCE_GROUP" | tee -a "$LOG_FILE"
-echo "Pause between transcriptions: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
+echo "Cooling pause after speech recognition: ${PAUSE_SECONDS}s" | tee -a "$LOG_FILE"
+echo "Transcription backend: $TRANSCRIPTION_BACKEND" | tee -a "$LOG_FILE"
+echo "Transcription limit: $TRANSCRIPTION_LIMIT" | tee -a "$LOG_FILE"
+echo "Transcription time budget: ${TRANSCRIPTION_TIME_BUDGET} minutes" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
 if [ "$MODE" != "backlog" ] && [ "$MODE" != "latest" ] && [ "$MODE" != "index" ]; then
@@ -60,6 +70,11 @@ done
 
 if [ "$SOURCE_GROUP" != "all" ] && [ "$SOURCE_GROUP" != "podcasts" ] && [ "$SOURCE_GROUP" != "churches" ]; then
     echo "Unknown source group '$SOURCE_GROUP'; expected all, podcasts, or churches." | tee -a "$LOG_FILE"
+    exit 2
+fi
+
+if [ "$TRANSCRIPTION_BACKEND" != "openai" ] && [ "$TRANSCRIPTION_BACKEND" != "mlx" ] && [ "$TRANSCRIPTION_BACKEND" != "auto" ]; then
+    echo "Unknown transcription backend '$TRANSCRIPTION_BACKEND'; expected openai, mlx, or auto." | tee -a "$LOG_FILE"
     exit 2
 fi
 
@@ -86,6 +101,8 @@ fi
 
 echo "" | tee -a "$LOG_FILE"
 
+TRANSCRIPTION_DIRS=()
+
 while IFS='|' read -r NAME TYPE URL DEST_REL; do
     [ -z "$NAME" ] && continue
     [[ "$NAME" == \#* ]] && continue
@@ -94,6 +111,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     ARCHIVE_FILE="$ARCHIVE_DIR/${NAME}_downloaded.txt"
 
     mkdir -p "$DEST_DIR"
+    TRANSCRIPTION_DIRS+=("$DEST_DIR")
 
     echo "========================================" | tee -a "$LOG_FILE"
     echo "Processing source: $NAME" | tee -a "$LOG_FILE"
@@ -106,79 +124,75 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
         continue
     fi
 
+    DOWNLOAD_ARGS=(
+        --download-archive "$ARCHIVE_FILE"
+        -x
+        --audio-format mp3
+        -o "$DEST_DIR/%(title)s.%(ext)s"
+    )
+    if [ "$TYPE" = "youtube" ]; then
+        DOWNLOAD_ARGS+=(
+            --write-auto-subs
+            --write-subs
+            --sub-langs "en.*,en"
+            --convert-subs vtt
+        )
+    fi
+
     if [ "$MODE" = "backlog" ]; then
         echo "Downloading up to $LIMIT new episodes..." | tee -a "$LOG_FILE"
-
-        "${YT_DLP[@]}" \
-            --download-archive "$ARCHIVE_FILE" \
-            --max-downloads "$LIMIT" \
-            -x \
-            --audio-format mp3 \
-            -o "$DEST_DIR/%(title)s.%(ext)s" \
-            "$URL" >> "$LOG_FILE" 2>&1
+        DOWNLOAD_ARGS+=(--max-downloads "$LIMIT")
+        "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
     else
         echo "Downloading new episodes..." | tee -a "$LOG_FILE"
-
-        "${YT_DLP[@]}" \
-            --download-archive "$ARCHIVE_FILE" \
-            -x \
-            --audio-format mp3 \
-            -o "$DEST_DIR/%(title)s.%(ext)s" \
-            "$URL" >> "$LOG_FILE" 2>&1
+        "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
     fi
-
-    echo "Looking for untranscribed MP3 files..." | tee -a "$LOG_FILE"
-    shopt -s nullglob
-    MP3_FILES=("$DEST_DIR"/*.mp3)
-
-    if [ ${#MP3_FILES[@]} -eq 0 ]; then
-        echo "No MP3 files to transcribe for $NAME." | tee -a "$LOG_FILE"
-        echo "" | tee -a "$LOG_FILE"
-        continue
-    fi
-
-    for file in "${MP3_FILES[@]}"; do
-        TXT_FILE="${file%.mp3}.txt"
-
-        if [ -f "$TXT_FILE" ]; then
-            echo "Transcript already exists, deleting leftover MP3: $(basename "$file")" | tee -a "$LOG_FILE"
-            for sidecar in "${file%.mp3}.srt" "${file%.mp3}.tsv" "${file%.mp3}.vtt" "${file%.mp3}.json"; do
-                [ -f "$sidecar" ] && rm "$sidecar"
-            done
-            [ -f "$file" ] && rm "$file"
-            continue
-        fi
-
-        echo "Transcribing: $(basename "$file")" | tee -a "$LOG_FILE"
-
-        whisper "$file" \
-            --model base \
-            --output_dir "$DEST_DIR" >> "$LOG_FILE" 2>&1
-
-        if [ -f "$TXT_FILE" ]; then
-            echo "Transcript created successfully." | tee -a "$LOG_FILE"
-
-            SRT_FILE="${file%.mp3}.srt"
-            TSV_FILE="${file%.mp3}.tsv"
-            VTT_FILE="${file%.mp3}.vtt"
-            JSON_FILE="${file%.mp3}.json"
-
-            [ -f "$SRT_FILE" ] && rm "$SRT_FILE"
-            [ -f "$TSV_FILE" ] && rm "$TSV_FILE"
-            [ -f "$VTT_FILE" ] && rm "$VTT_FILE"
-            [ -f "$JSON_FILE" ] && rm "$JSON_FILE"
-            [ -f "$file" ] && rm "$file"
-
-            echo "Deleted MP3 and extra subtitle files." | tee -a "$LOG_FILE"
-            echo "Pausing ${PAUSE_SECONDS} seconds before next file..." | tee -a "$LOG_FILE"
-            sleep "$PAUSE_SECONDS"
-        else
-            echo "Transcript failed for: $(basename "$file")" | tee -a "$LOG_FILE"
-        fi
-    done
-
     echo "" | tee -a "$LOG_FILE"
 done < <(emit_selected_sources)
+
+echo "========================================" | tee -a "$LOG_FILE"
+echo "Processing downloaded captions and audio as one resumable batch..." | tee -a "$LOG_FILE"
+
+if [ ! -f "$TRANSCRIBER" ]; then
+    echo "Batch transcriber not found: $TRANSCRIBER" | tee -a "$LOG_FILE"
+else
+    TRANSCRIBE_ARGS=(
+        "$TRANSCRIBER"
+        --pause-seconds "$PAUSE_SECONDS"
+        --limit "$TRANSCRIPTION_LIMIT"
+        --time-budget-minutes "$TRANSCRIPTION_TIME_BUDGET"
+    )
+
+    TRANSCRIBE_PYTHON="$PYTHON_BIN"
+    TRANSCRIBE_MODEL="$OPENAI_WHISPER_MODEL"
+    EFFECTIVE_BACKEND="$TRANSCRIPTION_BACKEND"
+    if [ "$TRANSCRIPTION_BACKEND" = "mlx" ] || [ "$TRANSCRIPTION_BACKEND" = "auto" ]; then
+        if [ -x "$MLX_PYTHON" ]; then
+            TRANSCRIBE_PYTHON="$MLX_PYTHON"
+            TRANSCRIBE_MODEL="$MLX_WHISPER_MODEL"
+            EFFECTIVE_BACKEND="mlx"
+        elif [ "$TRANSCRIPTION_BACKEND" = "mlx" ]; then
+            echo "MLX environment is unavailable; falling back to OpenAI Whisper." | tee -a "$LOG_FILE"
+            EFFECTIVE_BACKEND="openai"
+        else
+            EFFECTIVE_BACKEND="openai"
+        fi
+    fi
+
+    "$TRANSCRIBE_PYTHON" "${TRANSCRIBE_ARGS[@]}" \
+        --backend "$EFFECTIVE_BACKEND" \
+        --model "$TRANSCRIBE_MODEL" \
+        "${TRANSCRIPTION_DIRS[@]}" >> "$LOG_FILE" 2>&1
+    TRANSCRIBE_STATUS=$?
+
+    if [ $TRANSCRIBE_STATUS -ne 0 ] && [ "$EFFECTIVE_BACKEND" = "mlx" ]; then
+        echo "MLX transcription had a problem; retrying unfinished audio with OpenAI Whisper." | tee -a "$LOG_FILE"
+        "$PYTHON_BIN" "${TRANSCRIBE_ARGS[@]}" \
+            --backend openai \
+            --model "$OPENAI_WHISPER_MODEL" \
+            "${TRANSCRIPTION_DIRS[@]}" >> "$LOG_FILE" 2>&1
+    fi
+fi
 else
     echo "Index-only mode: skipping blog, media download, and transcription." | tee -a "$LOG_FILE"
 fi

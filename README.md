@@ -19,6 +19,7 @@ The main active update flow is:
 These are the main files currently used in the working system:
 
 - `update_bible_study_aid.sh`
+- `transcribe_audio_batch.py`
 - `import_commentaries.py`
 - `import_lff_blog.py`
 - `build_scripture_index.py`
@@ -41,9 +42,28 @@ This includes:
 
 These paths are defined in `source_folders.tsv`.
 
-Podcast backlog runs pause briefly between transcriptions. The default is five
-seconds and can be adjusted with `BIBLE_STUDY_PAUSE_SECONDS` if the computer
-needs a longer cooling interval.
+Podcast and church updates now request English captions alongside YouTube audio.
+Caption files are converted directly to transcripts; speech recognition runs only
+when captions are unavailable. Downloaded audio is processed as one resumable
+batch so the Whisper model is loaded once instead of once per recording.
+
+The default five-second cooling pause remains in place after speech recognition
+and does not run after fast caption imports. Set `BIBLE_STUDY_COOLING_SECONDS`
+to a larger value if the computer needs more cooling time. The older
+`BIBLE_STUDY_PAUSE_SECONDS` name remains supported.
+
+Transcription controls:
+
+- `BIBLE_STUDY_TRANSCRIBER=openai|mlx|auto` selects the backend. `auto` is the
+  default: it uses the faster Apple MLX backend when available and falls back
+  to OpenAI Whisper if MLX cannot complete a recording.
+- `BIBLE_STUDY_WHISPER_MODEL` defaults to the already-cached `base` model.
+- `BIBLE_STUDY_MLX_MODEL` defaults to `mlx-community/whisper-base.en-mlx`.
+- `BIBLE_STUDY_TRANSCRIPTION_LIMIT` caps completed items in one run; zero is
+  unlimited.
+- `BIBLE_STUDY_TRANSCRIPTION_TIME_BUDGET_MINUTES` stops before starting another
+  recording once the elapsed transcription budget has been reached; zero is
+  unlimited.
 
 ## Living Faith Fellowship churches
 
