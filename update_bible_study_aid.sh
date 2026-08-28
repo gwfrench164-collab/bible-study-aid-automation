@@ -37,10 +37,11 @@ SOURCE_GROUP="${3:-all}"
 PAUSE_SECONDS="${BIBLE_STUDY_COOLING_SECONDS:-${BIBLE_STUDY_PAUSE_SECONDS:-5}}"
 TRANSCRIPTION_BACKEND="${BIBLE_STUDY_TRANSCRIBER:-auto}"
 OPENAI_WHISPER_MODEL="${BIBLE_STUDY_WHISPER_MODEL:-base}"
-MLX_WHISPER_MODEL="${BIBLE_STUDY_MLX_MODEL:-mlx-community/whisper-base.en-mlx}"
+MLX_WHISPER_MODEL="${BIBLE_STUDY_MLX_MODEL:-mlx-community/whisper-base-mlx}"
 MLX_PYTHON="${BIBLE_STUDY_MLX_PYTHON:-$HOME/Library/Caches/BibleStudyAid/mlx-venv/bin/python}"
 TRANSCRIPTION_LIMIT="${BIBLE_STUDY_TRANSCRIPTION_LIMIT:-0}"
 TRANSCRIPTION_TIME_BUDGET="${BIBLE_STUDY_TRANSCRIPTION_TIME_BUDGET_MINUTES:-0}"
+LANGUAGE_CONFIDENCE="${BIBLE_STUDY_LANGUAGE_CONFIDENCE:-0.75}"
 
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR"
 
@@ -54,6 +55,7 @@ echo "Cooling pause after speech recognition: ${PAUSE_SECONDS}s" | tee -a "$LOG_
 echo "Transcription backend: $TRANSCRIPTION_BACKEND" | tee -a "$LOG_FILE"
 echo "Transcription limit: $TRANSCRIPTION_LIMIT" | tee -a "$LOG_FILE"
 echo "Transcription time budget: ${TRANSCRIPTION_TIME_BUDGET} minutes" | tee -a "$LOG_FILE"
+echo "Non-English skip confidence: $LANGUAGE_CONFIDENCE" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
 if [ "$MODE" != "backlog" ] && [ "$MODE" != "latest" ] && [ "$MODE" != "index" ]; then
@@ -128,6 +130,7 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
         --download-archive "$ARCHIVE_FILE"
         -x
         --audio-format mp3
+        --write-info-json
         -o "$DEST_DIR/%(title)s.%(ext)s"
     )
     if [ "$TYPE" = "youtube" ]; then
@@ -161,6 +164,7 @@ else
         --pause-seconds "$PAUSE_SECONDS"
         --limit "$TRANSCRIPTION_LIMIT"
         --time-budget-minutes "$TRANSCRIPTION_TIME_BUDGET"
+        --language-confidence "$LANGUAGE_CONFIDENCE"
     )
 
     TRANSCRIBE_PYTHON="$PYTHON_BIN"

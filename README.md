@@ -47,6 +47,13 @@ Caption files are converted directly to transcripts; speech recognition runs onl
 when captions are unavailable. Downloaded audio is processed as one resumable
 batch so the Whisper model is loaded once instead of once per recording.
 
+Only English-language recordings are processed. The updater first uses reliable
+download metadata when available; otherwise Whisper checks the recording's
+language before captions are imported or full transcription begins. A confidently
+non-English recording is left untouched and receives a small
+`skipped-language.json` audit marker so later updates ignore it without spending
+transcription resources again.
+
 The default five-second cooling pause remains in place after speech recognition
 and does not run after fast caption imports. Set `BIBLE_STUDY_COOLING_SECONDS`
 to a larger value if the computer needs more cooling time. The older
@@ -58,7 +65,10 @@ Transcription controls:
   default: it uses the faster Apple MLX backend when available and falls back
   to OpenAI Whisper if MLX cannot complete a recording.
 - `BIBLE_STUDY_WHISPER_MODEL` defaults to the already-cached `base` model.
-- `BIBLE_STUDY_MLX_MODEL` defaults to `mlx-community/whisper-base.en-mlx`.
+- `BIBLE_STUDY_MLX_MODEL` defaults to the multilingual
+  `mlx-community/whisper-base-mlx`, which supports the English-language gate.
+- `BIBLE_STUDY_LANGUAGE_CONFIDENCE` controls the non-English rejection threshold
+  and defaults to `0.75`.
 - `BIBLE_STUDY_TRANSCRIPTION_LIMIT` caps completed items in one run; zero is
   unlimited.
 - `BIBLE_STUDY_TRANSCRIPTION_TIME_BUDGET_MINUTES` stops before starting another

@@ -161,6 +161,7 @@ def podcast_status() -> dict:
     latest_log, feed_status = newest_completed_log_status()
     sources = []
     total_transcripts = 0
+    total_non_english_skipped = 0
     total_estimated_remaining = 0
 
     registry_rows = [row for path in PODCAST_REGISTRIES for row in load_pipe_registry(path)]
@@ -171,6 +172,9 @@ def podcast_status() -> dict:
         destination_path = BASE / destination
         counts = suffix_counts(destination_path)
         transcript_count = counts.get(".txt", 0)
+        non_english_skipped = len(
+            list(destination_path.glob("*.skipped-language.json"))
+        )
         archive_path = ARCHIVE_DIR / f"{name}_downloaded.txt"
         archive_entries = 0
         if archive_path.exists():
@@ -178,10 +182,15 @@ def podcast_status() -> dict:
 
         observed = feed_status.get(name, {})
         feed_items = observed.get("feed_items")
-        estimated_remaining = max(feed_items - transcript_count, 0) if isinstance(feed_items, int) else None
+        estimated_remaining = (
+            max(feed_items - transcript_count - non_english_skipped, 0)
+            if isinstance(feed_items, int)
+            else None
+        )
         if estimated_remaining is not None:
             total_estimated_remaining += estimated_remaining
         total_transcripts += transcript_count
+        total_non_english_skipped += non_english_skipped
 
         sources.append({
             "name": name,
@@ -189,6 +198,7 @@ def podcast_status() -> dict:
             "url": url,
             "destination": str(destination_path),
             "transcripts": transcript_count,
+            "non_english_skipped": non_english_skipped,
             "pending_audio": counts.get(".mp3", 0),
             "metadata_files": counts.get(".json", 0),
             "archive_entries": archive_entries,
@@ -201,6 +211,7 @@ def podcast_status() -> dict:
         "latest_completed_update_log": latest_log,
         "source_count": len(sources),
         "transcripts": total_transcripts,
+        "non_english_skipped": total_non_english_skipped,
         "estimated_remaining_known_feeds": total_estimated_remaining,
         "sources": sources,
     }
@@ -282,6 +293,7 @@ def markdown_report(report: dict) -> str:
         "",
         f"- Configured sources: {podcasts['source_count']}",
         f"- Local transcripts: {podcasts['transcripts']:,}",
+        f"- Non-English recordings skipped: {podcasts['non_english_skipped']:,}",
         f"- Estimated remaining across feeds with known totals: {podcasts['estimated_remaining_known_feeds']:,}",
         f"- Latest completed update log: {podcasts['latest_completed_update_log'] or 'none'}",
         "",
@@ -293,6 +305,7 @@ def markdown_report(report: dict) -> str:
         remaining_text = str(remaining) if remaining is not None else "unknown"
         lines.append(
             f"- {source['name']}: {source['transcripts']} transcripts / {total_text} feed items; "
+            f"non-English skipped {source['non_english_skipped']}; "
             f"estimated remaining {remaining_text}; latest errors {source['errors_in_latest_completed_run']}"
         )
 

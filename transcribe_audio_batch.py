@@ -9,16 +9,54 @@ written. Cooling pauses apply to speech recognition, not caption conversion.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import html
+import json
 import re
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
+
+import numpy as np
 
 
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".webm", ".opus", ".wav", ".mp4"}
 SIDE_CAR_EXTENSIONS = {".vtt", ".srt", ".tsv", ".json"}
 LANGUAGE_TAG = re.compile(r"^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*$")
+ENGLISH_LANGUAGE_NAMES = {"en", "eng", "english"}
+UNKNOWN_LANGUAGE_NAMES = {"", "und", "unknown", "none", "null"}
+
+
+def load_audio_excerpt(audio_path: Path, seconds: int = 30) -> np.ndarray:
+    ffmpeg = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+    if not Path(ffmpeg).is_file():
+        raise RuntimeError("ffmpeg is required for language detection")
+    completed = subprocess.run(
+        [
+            ffmpeg,
+            "-nostdin",
+            "-threads",
+            "0",
+            "-i",
+            str(audio_path),
+            "-t",
+            str(seconds),
+            "-f",
+            "s16le",
+            "-ac",
+            "1",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "16000",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    )
+    return np.frombuffer(completed.stdout, np.int16).astype(np.float32) / 32768.0
 
 
 def clean_caption_line(raw_line: str) -> str:
@@ -90,7 +128,49 @@ def is_related_sidecar(audio_path: Path, candidate: Path) -> bool:
     if not remainder.startswith("."):
         return False
     middle = remainder[1 : -len(candidate.suffix)].rstrip(".")
-    return bool(middle and LANGUAGE_TAG.fullmatch(middle))
+    return middle == "info" or bool(middle and LANGUAGE_TAG.fullmatch(middle))
+
+
+def normalize_language(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().casefold().replace("_", "-")
+    if normalized in UNKNOWN_LANGUAGE_NAMES:
+        return None
+    if normalized in ENGLISH_LANGUAGE_NAMES or normalized.startswith("en-"):
+        return "en"
+    return normalized
+
+
+def metadata_language(audio_path: Path) -> str | None:
+    info_path = audio_path.with_suffix(".info.json")
+    if not info_path.is_file():
+        return None
+    try:
+        info = json.loads(info_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return normalize_language(info.get("language"))
+
+
+def language_skip_marker(audio_path: Path) -> Path:
+    return audio_path.with_suffix(".skipped-language.json")
+
+
+def write_language_skip_marker(
+    audio_path: Path, language: str, confidence: float | None, source: str
+) -> Path:
+    marker_path = language_skip_marker(audio_path)
+    marker = {
+        "audio_title": audio_path.stem,
+        "detected_language": language,
+        "confidence": confidence,
+        "source": source,
+        "reason": "Only English-language material is processed.",
+        "skipped_at": datetime.now(timezone.utc).isoformat(),
+    }
+    marker_path.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
+    return marker_path
 
 
 def caption_candidates(audio_path: Path) -> list[Path]:
@@ -129,7 +209,20 @@ class OpenAIBackend:
         import whisper
 
         print(f"Loading OpenAI Whisper model once: {model_name}", flush=True)
+        self.whisper = whisper
         self.model = whisper.load_model(model_name, device="cpu")
+
+    def detect_language(self, audio_path: Path) -> tuple[str, float]:
+        if not self.model.is_multilingual:
+            raise RuntimeError("language detection requires a multilingual Whisper model")
+        audio = load_audio_excerpt(audio_path)
+        audio = self.whisper.pad_or_trim(audio)
+        mel = self.whisper.log_mel_spectrogram(
+            audio, n_mels=self.model.dims.n_mels
+        ).to(self.model.device)
+        _, probabilities = self.model.detect_language(mel)
+        language = max(probabilities, key=probabilities.get)
+        return language, float(probabilities[language])
 
     def transcribe(self, audio_path: Path) -> str:
         result = self.model.transcribe(
@@ -140,11 +233,39 @@ class OpenAIBackend:
 
 class MLXBackend:
     def __init__(self, model_name: str) -> None:
+        import mlx.core as mx
         import mlx_whisper
+        from mlx_whisper.audio import (
+            N_FRAMES,
+            N_SAMPLES,
+            log_mel_spectrogram,
+            pad_or_trim,
+        )
+        from mlx_whisper.transcribe import ModelHolder
 
         print(f"Loading MLX Whisper model once: {model_name}", flush=True)
+        self.mx = mx
         self.mlx_whisper = mlx_whisper
         self.model_name = model_name
+        self.n_frames = N_FRAMES
+        self.n_samples = N_SAMPLES
+        self.log_mel_spectrogram = log_mel_spectrogram
+        self.pad_or_trim = pad_or_trim
+        self.model = ModelHolder.get_model(model_name, dtype=mx.float16)
+
+    def detect_language(self, audio_path: Path) -> tuple[str, float]:
+        if not self.model.is_multilingual:
+            raise RuntimeError("language detection requires a multilingual Whisper model")
+        audio = load_audio_excerpt(audio_path)
+        mel = self.log_mel_spectrogram(
+            audio, n_mels=self.model.dims.n_mels, padding=self.n_samples
+        )
+        mel_segment = self.pad_or_trim(mel, self.n_frames, axis=-2).astype(
+            self.mx.float16
+        )
+        _, probabilities = self.model.detect_language(mel_segment)
+        language = max(probabilities, key=probabilities.get)
+        return language, float(probabilities[language])
 
     def transcribe(self, audio_path: Path) -> str:
         result = self.mlx_whisper.transcribe(
@@ -179,8 +300,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pause-seconds", type=float, default=5.0)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--time-budget-minutes", type=float, default=0.0)
+    parser.add_argument("--language-confidence", type=float, default=0.75)
     parser.add_argument("--keep-audio", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not 0 <= args.language_confidence <= 1:
+        parser.error("--language-confidence must be between 0 and 1")
+    return args
 
 
 def main() -> int:
@@ -194,6 +319,7 @@ def main() -> int:
     completed = 0
     failed = 0
     skipped = 0
+    non_english = 0
     backend = None
 
     for audio_path in audio_files:
@@ -203,6 +329,11 @@ def main() -> int:
             if not args.keep_audio:
                 cleanup_completed_audio(audio_path)
             skipped += 1
+            continue
+
+        if language_skip_marker(audio_path).is_file():
+            print(f"Previously marked non-English: {audio_path.name}", flush=True)
+            non_english += 1
             continue
 
         if args.limit > 0 and completed >= args.limit:
@@ -217,6 +348,53 @@ def main() -> int:
                 )
                 break
 
+        known_language = metadata_language(audio_path)
+        language_source = "download metadata"
+        language_confidence: float | None = None
+
+        if known_language is None:
+            language_source = "Whisper language detection"
+            if backend is None:
+                if args.backend == "mlx":
+                    model_name = args.model or "mlx-community/whisper-base-mlx"
+                    backend = MLXBackend(model_name)
+                else:
+                    model_name = args.model or "base"
+                    backend = OpenAIBackend(model_name)
+            try:
+                known_language, language_confidence = backend.detect_language(audio_path)
+                print(
+                    f"Detected language for {audio_path.name}: {known_language} "
+                    f"({language_confidence:.1%})",
+                    flush=True,
+                )
+            except Exception as exc:
+                failed += 1
+                print(
+                    f"Language detection failed for {audio_path.name}: {exc}",
+                    file=sys.stderr,
+                )
+                continue
+
+        confident_non_english = known_language != "en" and (
+            language_source == "download metadata"
+            or (
+                language_confidence is not None
+                and language_confidence >= args.language_confidence
+            )
+        )
+        if confident_non_english:
+            marker_path = write_language_skip_marker(
+                audio_path, known_language, language_confidence, language_source
+            )
+            non_english += 1
+            print(
+                f"Skipped non-English audio ({known_language}): {audio_path.name}; "
+                f"recorded in {marker_path.name}",
+                flush=True,
+            )
+            continue
+
         caption_transcript = transcript_from_caption(audio_path)
         if caption_transcript is not None:
             completed += 1
@@ -226,7 +404,7 @@ def main() -> int:
 
         if backend is None:
             if args.backend == "mlx":
-                model_name = args.model or "mlx-community/whisper-base.en-mlx"
+                model_name = args.model or "mlx-community/whisper-base-mlx"
                 backend = MLXBackend(model_name)
             else:
                 model_name = args.model or "base"
@@ -254,8 +432,8 @@ def main() -> int:
 
     print(
         f"Batch complete: {completed} completed, {failed} failed, "
-        f"{len(audio_files) - completed - failed - skipped} deferred, "
-        f"{skipped} already complete.",
+        f"{len(audio_files) - completed - failed - skipped - non_english} deferred, "
+        f"{skipped} already complete, {non_english} non-English skipped.",
         flush=True,
     )
     return 1 if failed else 0
