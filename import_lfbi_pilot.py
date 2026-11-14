@@ -364,4 +364,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    raise SystemExit("Retired copy/rebuild workflow. Use update_bible_study_aid.sh or process_lfbi_manifest.py instead.")
     sys.exit(main())

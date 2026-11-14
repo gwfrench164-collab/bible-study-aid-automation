@@ -316,6 +316,16 @@ PAGE_TEMPLATE = """
             padding: 7px 11px;
             font-weight: 600;
         }
+        .page { max-width: 1180px; padding: clamp(12px, 3vw, 36px); }
+        .search-row { grid-template-columns: minmax(260px,1fr) repeat(3,auto); }
+        .search-row > div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+        .source-filter-grid { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+        .result-title { font-size: 1.22rem; line-height: 1.4; overflow-wrap: anywhere; }
+        .snippet { font: 1.1rem/1.65 Georgia, serif; max-width: 76ch; }
+        .group-toggle { padding-block: 14px; }
+        .sort-control { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+        .sort-control select { width: auto; }
+        :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
         @media (max-width: 980px) {
             .search-row {
                 grid-template-columns: 1fr;
@@ -372,15 +382,19 @@ PAGE_TEMPLATE = """
                     <button type="submit">Search</button>
                 </div>
             </div>
+            <label class="sort-control">Order within each group
+                <select name="sort"><option value="rank">Best match first</option>
+                <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A–Z</option></select>
+            </label>
             <div class="hint"><strong>Best matches</strong> is broad and ranked. Use <strong>All words</strong> to narrow a topic, or <strong>Exact phrase</strong> when wording matters.</div>
         </form>
 
         {% if searched %}
-            <div class="results-meta">Showing {{ results|length }} result(s){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
+            <div class="results-meta">Showing {{ results|length }} {{ 'result' if results|length == 1 else 'results' }}{% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
             {% if grouped_results %}
             <div class="results-summary">
-                {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit) }}">All sources</a>{% endif %}
-                {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
+                {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit, sort=sort) }}">All sources</a>{% endif %}
+                {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit, sort=sort) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
             </div>
             {% endif %}
 
@@ -393,17 +407,17 @@ PAGE_TEMPLATE = """
                     <div class="result-card">
                         <div class="result-top">
                             <div>
-                                <div class="result-title"><span class="result-number">{{ item.display_number }}.</span>{{ item.title }}</div>
+                                <div class="result-title">{{ item.highlighted_title | safe }}</div>
                                 <div class="badges">
-                                    <span class="badge">{{ item.source_type }}</span>
+                                    <span class="badge">{{ item.format }}</span>
                                     {% if item.context %}<span class="badge badge-muted">{{ item.context }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
                         <div class="snippet">{{ item.snippet | safe }}</div>
                         <div class="result-actions">
-                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Read Source</a>
-                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}">Show in Finder</a>
+                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}">{{ 'Preview text' if item.format in ['TXT', 'MD'] else 'Open Source' }}</a>
+                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}">Show in Finder</a>
                         </div>
                         <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
                     </div>
@@ -522,6 +536,7 @@ def add_result_context(results):
         updated = deepcopy(item)
         updated["display_number"] = display_number
         path = Path(item.get("path", ""))
+        updated["format"] = path.suffix[1:].upper() or "File"
         parts = list(path.parts[:-1])
         context_parts = []
 
@@ -595,20 +610,19 @@ def build_highlight_pattern(query: str):
 
 
 def highlight_text(text: str, pattern):
-    escaped = escape(text or "")
     if not pattern:
-        return escaped
-    return pattern.sub(r"<mark>\1</mark>", escaped)
+        return escape(text or "")
+    pieces = pattern.split(text or "")
+    return "".join(f"<mark>{escape(piece)}</mark>" if i % 2 else escape(piece)
+                   for i, piece in enumerate(pieces))
 
 
 def apply_highlighting(results, query: str):
     pattern = build_highlight_pattern(query)
-    if not pattern:
-        return results
-
     highlighted = []
     for item in results:
         updated = deepcopy(item)
+        updated["highlighted_title"] = highlight_text(item.get("title", ""), pattern)
         updated["snippet"] = highlight_text(item.get("snippet", ""), pattern)
         highlighted.append(updated)
 
@@ -675,7 +689,10 @@ def run_desktop_app():
         server.join(timeout=2)
 
 def render_page(query, selected_source_types, search_mode, limit, results, searched):
+    sort = "title" if request.args.get("sort") == "title" else "rank"
     enriched_results = add_result_context(results)
+    if sort == "title":
+        enriched_results.sort(key=lambda item: (item["title"] or "").casefold())
     return render_template_string(
         PAGE_TEMPLATE,
         query=query,
@@ -684,6 +701,7 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
         search_mode=search_mode,
         limit=limit,
         results=enriched_results,
+        sort=sort,
         grouped_results=group_results(enriched_results),
         searched=searched,
     )
@@ -731,10 +749,15 @@ def open_source():
     search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
     limit = normalize_limit(request.args.get("limit", "20"))
     return_args = [("q", query), ("mode", search_mode), ("limit", str(limit))]
+    return_args.append(("sort", "title" if request.args.get("sort") == "title" else "rank"))
     return_args.extend(("source_types", value) for value in selected_source_types)
     return_url = "/?" + urlencode(return_args)
 
-    if full_path.suffix.lower() in {".txt", ".md"}:
+    action_args = urlencode(return_args + [("path", rel_path)])
+    if request.args.get("native") == "1":
+        if not full_path.is_relative_to(BASE.resolve()) or not full_path.is_file():
+            abort(404)
+    elif full_path.suffix.lower() in {".txt", ".md"}:
         try:
             text = full_path.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -754,7 +777,7 @@ def open_source():
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                     font-size: 19px;
                     line-height: 1.7;
-                    max-width: 980px;
+                    max-width: 78ch;
                     margin: 0 auto;
                     padding: 0 24px 60px;
                     background: #f7f7f7;
@@ -765,6 +788,7 @@ def open_source():
                     top: 0;
                     z-index: 10;
                     display: flex;
+                    flex-wrap: wrap;
                     justify-content: space-between;
                     align-items: center;
                     gap: 12px;
@@ -801,6 +825,7 @@ def open_source():
                     padding: 28px 32px;
                     border-radius: 12px;
                     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+                    font-family: Georgia, serif;
                     white-space: pre-wrap;
                     word-wrap: break-word;
                 }}
@@ -810,6 +835,8 @@ def open_source():
         <body>
             <div class="toolbar">
                 <a href="{escape(return_url, quote=True)}">← Back to results</a>
+                <a href="/open?{escape(action_args)}&amp;native=1">Open Source</a>
+                <a href="/reveal?{escape(action_args)}">Show in Finder</a>
                 <div class="font-controls">
                     <button type="button" onclick="resizeText(-1)" aria-label="Decrease text size">A−</button>
                     <button type="button" onclick="resizeText(1)" aria-label="Increase text size">A+</button>

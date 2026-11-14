@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from pipeline_support import atomic_write_text
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -20,7 +21,7 @@ PODCAST_REGISTRIES = [
 LOG_DIR = AUTOMATION_DIR / "logs"
 ARCHIVE_DIR = AUTOMATION_DIR / "archives"
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pages"}
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pptx", ".xlsx", ".pages"}
 
 
 def load_tab_registry(path: Path) -> list[list[str]]:
@@ -66,7 +67,7 @@ def indexed_file_count(root: Path) -> int:
     except ValueError:
         rel_root = str(root)
 
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
     try:
         return connection.execute(
             "SELECT COUNT(*) FROM documents WHERE rel_path = ? OR rel_path LIKE ?",
@@ -87,7 +88,7 @@ def database_status() -> dict:
     if not DB_PATH.exists():
         return status
 
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
     try:
         status["documents"] = connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
         status["chunks"] = connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
@@ -131,7 +132,7 @@ def newest_completed_log_status() -> tuple[str | None, dict[str, dict]]:
     completed_log = None
     for path in sorted(LOG_DIR.glob("update_*.log"), reverse=True):
         text = path.read_text(encoding="utf-8", errors="ignore")
-        if "Update complete." in text:
+        if "Update complete." in text or "Update completed with" in text:
             completed_log = path
             break
 
@@ -327,7 +328,8 @@ def markdown_report(report: dict) -> str:
         "",
         "## Data-quality checks",
         "",
-        f"- Possible exact LFBI duplicates by normalized filename and size: {len(report['possible_lfbi_duplicates'])}",
+        f"- Latest update: {report.get('latest_update', {}).get('state', 'unknown')} (see latest log for errors)",
+        f"- Possible LFBI duplicates by normalized filename and size: {len(report['possible_lfbi_duplicates'])}",
         "",
         "Podcast feed totals and remaining counts are estimates from the latest completed updater log.",
     ])
@@ -336,7 +338,13 @@ def markdown_report(report: dict) -> str:
 
 def main() -> None:
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    logs = sorted(LOG_DIR.glob("update_*.log"), reverse=True)
+    latest = logs[0] if logs else None
+    latest_text = latest.read_text(errors="replace") if latest else ""
     report = {
+        "latest_update": {"log": str(latest) if latest else None,
+                          "state": "failed" if "Update completed with" in latest_text else "complete" if "Update complete." in latest_text else "running_or_interrupted",
+                          "error_lines": sum("ERROR:" in line or "STAGE FAILED:" in line for line in latest_text.splitlines())},
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "database": database_status(),
         "registered_sources": registered_sources_status(),
@@ -347,8 +355,8 @@ def main() -> None:
 
     json_path = INDEX_DIR / "library_status.json"
     markdown_path = INDEX_DIR / "Library_Status.md"
-    json_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    markdown_path.write_text(markdown_report(report), encoding="utf-8")
+    atomic_write_text(json_path, json.dumps(report, indent=2))
+    atomic_write_text(markdown_path, markdown_report(report))
     print(f"Wrote: {json_path}")
     print(f"Wrote: {markdown_path}")
 

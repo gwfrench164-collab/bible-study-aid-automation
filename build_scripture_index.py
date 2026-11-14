@@ -1,6 +1,9 @@
 from pathlib import Path
 import re
 import sys
+import sqlite3
+import io
+from pipeline_support import atomic_write_text
 from collections import defaultdict, Counter
 
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
@@ -460,15 +463,12 @@ def build_scripture_index():
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     scripture_map = defaultdict(set)
 
-    for folder in SEARCH_FOLDERS:
-        if not folder.exists():
-            continue
-        for path in folder.rglob("*"):
-            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES:
-                refs = scan_file(path)
-                rel_path = path.relative_to(BASE)
-                for ref in refs:
-                    scripture_map[ref].add(str(rel_path))
+    database = INDEX_DIR / "bible_study.db"
+    with sqlite3.connect(database.as_uri() + "?mode=ro", uri=True) as conn:
+        for ref, path in conn.execute("SELECT DISTINCT r.scripture_ref,d.rel_path FROM chunk_refs r JOIN chunks c ON c.id=r.chunk_id JOIN documents d ON d.id=c.document_id"):
+            match = REFERENCE_REGEX.fullmatch(ref)
+            if match and normalize_reference(match):
+                scripture_map[ref].add(path)
 
     grouped = defaultdict(list)
     for ref in scripture_map:
@@ -476,7 +476,7 @@ def build_scripture_index():
         if book_index < len(BOOK_PATTERNS):
             grouped[BOOK_PATTERNS[book_index]].append(ref)
 
-    with INDEX_FILE.open("w", encoding="utf-8") as f:
+    with io.StringIO() as f:
         for book in BOOK_PATTERNS:
             refs = grouped.get(book, [])
             if not refs:
@@ -491,6 +491,10 @@ def build_scripture_index():
                 for file_path in paths:
                     f.write(f"  - {file_path}\n")
                 f.write("\n")
+
+        output = f.getvalue()
+    if not INDEX_FILE.exists() or INDEX_FILE.read_text(encoding="utf-8") != output:
+        atomic_write_text(INDEX_FILE, output)
 
     print(f"Scripture index written to: {INDEX_FILE}")
 

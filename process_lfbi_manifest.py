@@ -6,9 +6,11 @@ import argparse
 import html
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
+from pipeline_support import atomic_write_text, excluded_resource
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse, unquote
@@ -219,29 +221,15 @@ def scan_existing_library_files() -> list[dict]:
 
 def find_existing_resource(resource: dict, existing_files: list[dict]) -> Optional[Path]:
     candidates = resource_candidate_names(resource)
-    if not candidates:
-        return None
-
-    for candidate in candidates:
-        for item in existing_files:
-            existing_name = item["normalized_name"]
-            if duplicate_names_match(candidate, existing_name):
-                return item["path"]
-
-    for candidate in candidates:
-        candidate_words = set(candidate.split())
-        if len(candidate_words) < 2:
-            continue
-        for item in existing_files:
-            existing_name = item["normalized_name"]
-            if not existing_name or not has_specific_duplicate_identifier(existing_name):
-                continue
-            existing_words = set(existing_name.split())
-            if len(existing_words) < 2:
-                continue
-            if duplicate_names_match(candidate, existing_name):
-                return item["path"]
-
+    matches = {item["path"] for candidate in candidates for item in existing_files
+               if duplicate_names_match(candidate, item["normalized_name"])}
+    if len(matches) == 1:
+        return next(iter(matches))
+    if matches:
+        from import_lfbi_downloads import file_hash
+        if len({file_hash(path) for path in matches}) == 1:
+            return sorted(matches)[0]
+        print(f"[WARN] Multiple different local candidates for {resource.get('title')}; leaving unresolved.")
     return None
 
 
@@ -269,8 +257,7 @@ def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[
     by_week: dict[int, dict] = {}
 
     for summary_path in LFBI_ROOT.rglob("course_manifest_processed.json"):
-        if summary_path.parent == course_root:
-            continue
+        is_current_course = summary_path.parent == course_root
         try:
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -285,7 +272,7 @@ def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[
             transcript_path = Path(transcript_value)
             if not transcript_path.is_absolute():
                 transcript_path = BASE / transcript_path
-            if not transcript_path.exists():
+            if not transcript_path.is_file() or transcript_path.stat().st_size == 0:
                 continue
 
             reusable = {
@@ -295,12 +282,12 @@ def reusable_video_transcripts(manifest: dict, course_root: Path) -> tuple[dict[
             }
             if video.get("url"):
                 by_url.setdefault(video["url"], reusable)
-            if same_course and isinstance(video.get("week_number"), int):
+            if not is_current_course and same_course and isinstance(video.get("week_number"), int):
                 by_week.setdefault(video["week_number"], reusable)
 
         # Some early processed courses have transcripts on disk but no video
         # entries in their processed manifest. Retakes can still reuse them.
-        if same_course:
+        if not is_current_course and same_course:
             for transcript_path in summary_path.parent.glob("Week_*/transcripts/*.txt"):
                 week_match = re.search(r"\bWeek[_ -]*(\d+)(?!\d)", str(transcript_path), re.IGNORECASE)
                 if not week_match:
@@ -440,13 +427,21 @@ def download_resource(resource: dict, destination_dir: Path, cookies_jar=None) -
         print(f"[WARN] Download HTTP {response.status_code} for {title}: {url}")
         return None
 
-    if "text/html" in content_type and "moodle" in response.text[:2000].lower() and "login" in response.text[:5000].lower():
+    if "text/html" in content_type or response.content.lstrip().lower().startswith((b"<!doctype html", b"<html")):
         print(f"[WARN] Moodle login page received instead of file for {title}. Cookies are missing or expired.")
         return None
 
-    filename = clean_filename_from_response(response, title, response.url or url)
+    filename = Path(clean_filename_from_response(response, title, response.url or url)).name
     destination = destination_dir / filename
-    destination.write_bytes(response.content)
+    if not response.content:
+        return None
+    if destination.exists():
+        if destination.read_bytes() == response.content:
+            return destination
+        print(f"[WARN] Existing file differs; leaving resource queued: {destination}")
+        return None
+    with destination.open("xb") as output:
+        output.write(response.content)
     print(f"[OK] Downloaded {resource.get('kind', 'resource')}: {destination}")
     return destination
 
@@ -480,19 +475,30 @@ def find_first_matching_file(folder: Path, patterns: tuple[str, ...]) -> Optiona
     return None
 
 
+def yt_dlp_command() -> list[str]:
+    """Use the installed yt-dlp executable, falling back to the Python module."""
+    executable = shutil.which("yt-dlp")
+    if executable:
+        return [executable]
+    return [sys.executable, "-m", "yt_dlp"]
+
+
 def try_youtube_captions(video_url: str, transcript_dir: Path, work_dir: Path, title: str) -> Optional[Path]:
+    work_dir = work_dir / slugify(title)
+    work_dir.mkdir(parents=True, exist_ok=True)
     output_template = work_dir / slugify(title)
-    command = [
-        sys.executable,
-        "-m",
-        "yt_dlp",
-        "--remote-components",
-        "ejs:github",
+    command = yt_dlp_command() + [
+        "--socket-timeout",
+        "15",
+        "--retries",
+        "1",
+        "--fragment-retries",
+        "1",
         "--skip-download",
         "--write-auto-subs",
         "--write-subs",
         "--sub-langs",
-        "en.*",
+        "en-orig",
         "--convert-subs",
         "vtt",
         "-o",
@@ -503,9 +509,14 @@ def try_youtube_captions(video_url: str, transcript_dir: Path, work_dir: Path, t
     if result.returncode != 0:
         if result.stderr:
             print(result.stderr.strip())
-        return None
 
     caption_file = find_first_matching_file(work_dir, (".en.vtt", ".vtt", ".en-US.vtt", ".en-orig.vtt"))
+    if not caption_file:
+        fallback_command = ["en" if value == "en-orig" else value for value in command]
+        fallback_result = run_command(fallback_command)
+        if fallback_result.returncode != 0 and fallback_result.stderr:
+            print(fallback_result.stderr.strip())
+        caption_file = find_first_matching_file(work_dir, (".en.vtt", ".vtt", ".en-US.vtt", ".en-orig.vtt"))
     if not caption_file:
         return None
 
@@ -514,19 +525,22 @@ def try_youtube_captions(video_url: str, transcript_dir: Path, work_dir: Path, t
         return None
 
     transcript_path = transcript_dir / f"{slugify(title)}.txt"
-    transcript_path.write_text(transcript_text + "\n", encoding="utf-8")
+    atomic_write_text(transcript_path, transcript_text + "\n")
     print(f"[OK] Saved transcript from captions: {transcript_path}")
     return transcript_path
 
 
 def try_whisper_fallback(video_url: str, transcript_dir: Path, work_dir: Path, title: str) -> Optional[Path]:
+    work_dir = work_dir / slugify(title)
+    work_dir.mkdir(parents=True, exist_ok=True)
     audio_template = work_dir / f"{slugify(title)}_audio"
-    download_command = [
-        sys.executable,
-        "-m",
-        "yt_dlp",
-        "--remote-components",
-        "ejs:github",
+    download_command = yt_dlp_command() + [
+        "--socket-timeout",
+        "15",
+        "--retries",
+        "1",
+        "--fragment-retries",
+        "1",
         "-f",
         "bestaudio/best",
         "-o",
@@ -591,8 +605,7 @@ def process_videos(manifest: dict, course_root: Path, captions_only: bool = Fals
         part_number = video_item.get("part_number")
         canonical_title = video_item.get("week_title") or canonical_week_title(manifest, week_number)
         reusable = reusable_by_url.get(video_url)
-        if reusable is None and part_number in (None, 1, "1"):
-            reusable = reusable_by_week.get(week_number)
+        # A matching course/week alone does not prove identical lecture content.
         if reusable:
             transcript_path = reusable["transcript_path"]
             print(
@@ -603,7 +616,7 @@ def process_videos(manifest: dict, course_root: Path, captions_only: bool = Fals
                 "week_number": week_number,
                 "week_title": canonical_title or f"Week {week_number}",
                 "url": video_url,
-                "transcript_path": str(transcript_path.relative_to(BASE)),
+                "transcript_path": str(transcript_path.relative_to(BASE)) if transcript_path.is_relative_to(BASE) else str(transcript_path),
                 "strategy": "retake_reuse",
                 "reused_from_course": reusable["course_title"],
             })
@@ -638,7 +651,7 @@ def process_videos(manifest: dict, course_root: Path, captions_only: bool = Fals
 
 
 def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tuple[list[dict], list[dict], list[dict]]:
-    resources = [r for r in manifest.get("resources", []) if r.get("kind") not in SKIP_KINDS]
+    resources = [r for r in manifest.get("resources", []) if not excluded_resource(r)]
     weeks = manifest.get("weeks", [])
     downloaded = []
     queued = []
@@ -660,7 +673,7 @@ def process_resources(manifest: dict, course_root: Path, cookies_jar=None) -> tu
                 already_available.append({
                     **resource,
                     "existing_path": str(declared_path),
-                    "existing_path_relative_to_base": str(declared_path.relative_to(BASE)),
+                    "existing_path_relative_to_base": str(declared_path.relative_to(BASE)) if declared_path.is_relative_to(BASE) else None,
                 })
                 print(f"[FOUND] Declared equivalent already available: {resource.get('title', 'Untitled')} -> {declared_path}")
                 continue
@@ -749,7 +762,7 @@ def write_download_queue(course_root: Path, queued: list[dict]) -> Optional[Path
 </html>
 """
     queue_path = course_root / "download_queue.html"
-    queue_path.write_text(page, encoding="utf-8")
+    atomic_write_text(queue_path, page)
     print(f"[OK] Wrote download queue: {queue_path}")
     return queue_path
 
@@ -766,7 +779,7 @@ def write_processing_summary(course_root: Path, manifest: dict, downloaded: list
         "processed_videos": videos,
     }
     summary_path = course_root / "course_manifest_processed.json"
-    summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    atomic_write_text(summary_path, json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
     print(f"[OK] Wrote processed manifest: {summary_path}")
     return summary_path
 

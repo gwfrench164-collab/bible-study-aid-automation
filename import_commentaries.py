@@ -3,8 +3,13 @@ import sqlite3
 import re
 import hashlib
 import tempfile
+import zipfile
+import xml.etree.ElementTree as ET
 from datetime import datetime
 import subprocess
+import json
+import os
+from pipeline_support import atomic_write_text
 
 BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
 DB_PATH = BASE / "99_Index" / "bible_study.db"
@@ -77,7 +82,7 @@ SEARCH_SOURCES = LOCAL_SOURCES + load_lff_church_sources() + [
     (BASE / "06_Blogs", "blog"),
 ]
 
-READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pages"}
+READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pptx", ".xlsx", ".pages"}
 
 BOOK_PATTERNS = [
     "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
@@ -133,11 +138,12 @@ def collect_files() -> list[Path]:
     seen = set()
     for folder, _source_type in SEARCH_SOURCES:
         if not folder.exists():
+            print(f"WARNING: Source unavailable; retaining prior index: {folder}")
             continue
         for path in folder.rglob("*"):
-            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES and path not in seen:
+            if path.is_file() and path.suffix.lower() in READABLE_SUFFIXES and path.resolve() not in seen:
                 files.append(path)
-                seen.add(path)
+                seen.add(path.resolve())
     return files
 
 
@@ -207,6 +213,7 @@ def read_pdf_text_with_ocr(path: Path) -> str:
                 ["pdftoppm", "-jpeg", "-r", "160", str(path), str(image_prefix)],
                 capture_output=True,
                 text=True,
+                timeout=600,
             )
             if rendered.returncode != 0:
                 return ""
@@ -216,6 +223,7 @@ def read_pdf_text_with_ocr(path: Path) -> str:
                     ["tesseract", str(image_path), "stdout", "-l", "eng", "--psm", "6"],
                     capture_output=True,
                     text=True,
+                    timeout=120,
                 )
                 if result.returncode == 0 and result.stdout.strip():
                     pieces.append(result.stdout.strip())
@@ -229,24 +237,104 @@ def read_pdf_text_with_ocr(path: Path) -> str:
 
 
 def read_docx_text(path: Path) -> str:
+    """Include tables/text boxes, selecting modern OOXML over duplicate fallback."""
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    mc = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+    with zipfile.ZipFile(path) as archive:
+        root = ET.fromstring(archive.read("word/document.xml"))
+    for alternate in root.iter(mc + "AlternateContent"):
+        choices = alternate.findall(mc + "Choice")
+        fallback = alternate.find(mc + "Fallback")
+        selected = choices[0] if choices else fallback
+        for child in list(alternate):
+            if child is not selected:
+                alternate.remove(child)
+    def paragraph_text(element):
+        pieces = []
+        for child in element:
+            if child.tag == w + "p":
+                continue
+            if child.tag == w + "t":
+                pieces.append(child.text or "")
+            elif child.tag in {w + "br", w + "tab"}:
+                pieces.append(" ")
+            else:
+                pieces.append(paragraph_text(child))
+        return "".join(pieces)
+    return "\n".join(text for p in root.iter(w + "p") if (text := paragraph_text(p).strip()))
+
+
+def read_pptx_text(path: Path) -> str:
+    namespace = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
     try:
-        import docx
-        document = docx.Document(str(path))
-        paragraphs = [p.text for p in document.paragraphs if p.text.strip()]
-        return "\n".join(paragraphs)
+        with zipfile.ZipFile(path) as archive:
+            slide_names = sorted(
+                (name for name in archive.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)),
+                key=lambda name: int(re.search(r"\d+", Path(name).stem).group()),
+            )
+            slides = []
+            for slide_number, name in enumerate(slide_names, start=1):
+                root = ET.fromstring(archive.read(name))
+                text = [node.text.strip() for node in root.findall(".//a:t", namespace) if node.text and node.text.strip()]
+                if text:
+                    slides.append(f"Slide {slide_number}\n" + "\n".join(text))
+            return "\n\n".join(slides)
+    except Exception:
+        return ""
+
+
+def read_xlsx_text(path: Path) -> str:
+    namespace = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+    try:
+        with zipfile.ZipFile(path) as archive:
+            shared_strings = []
+            if "xl/sharedStrings.xml" in archive.namelist():
+                shared_root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+                for item in shared_root.findall("s:si", namespace):
+                    shared_strings.append("".join(node.text or "" for node in item.findall(".//s:t", namespace)))
+
+            workbook_root = ET.fromstring(archive.read("xl/workbook.xml"))
+            sheet_names = [node.attrib.get("name", "Sheet") for node in workbook_root.findall(".//s:sheet", namespace)]
+            worksheet_names = sorted(
+                (name for name in archive.namelist() if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name)),
+                key=lambda name: int(re.search(r"\d+", Path(name).stem).group()),
+            )
+            sheets = []
+            for index, name in enumerate(worksheet_names):
+                root = ET.fromstring(archive.read(name))
+                rows = []
+                for row in root.findall(".//s:row", namespace):
+                    values = []
+                    for cell in row.findall("s:c", namespace):
+                        cell_type = cell.attrib.get("t")
+                        if cell_type == "inlineStr":
+                            value = "".join(node.text or "" for node in cell.findall(".//s:t", namespace))
+                        else:
+                            value_node = cell.find("s:v", namespace)
+                            value = value_node.text if value_node is not None and value_node.text else ""
+                            if cell_type == "s" and value.isdigit() and int(value) < len(shared_strings):
+                                value = shared_strings[int(value)]
+                        if value.strip():
+                            values.append(f"{cell.attrib.get('r', '')}: {value.strip()}")
+                    if values:
+                        rows.append(" | ".join(values))
+                if rows:
+                    sheet_title = sheet_names[index] if index < len(sheet_names) else f"Sheet {index + 1}"
+                    sheets.append(f"Worksheet: {sheet_title}\n" + "\n".join(rows))
+            return "\n\n".join(sheets)
     except Exception:
         return ""
 
 
 def read_pages_text(path: Path) -> str:
+    escaped_path = str(path).replace("\\", "\\\\").replace('"', '\\"')
     applescript = f'''
     tell application "Pages"
-        set docRef to open POSIX file "{path}"
+        set docRef to open POSIX file "{escaped_path}"
         set paraList to every paragraph of body text of docRef
         set AppleScript's text item delimiters to linefeed
         set outText to paraList as text
         close docRef saving no
-        quit
     end tell
     return outText
     '''
@@ -257,6 +345,7 @@ def read_pages_text(path: Path) -> str:
             capture_output=True,
             text=True,
             check=True,
+            timeout=120,
         )
         return completed.stdout
     except Exception:
@@ -266,10 +355,16 @@ def read_pages_text(path: Path) -> str:
 def read_text(path: Path) -> str:
     suffix = path.suffix.lower()
 
+    if suffix == ".rtf":
+        return subprocess.run(["textutil", "-convert", "txt", "-stdout", str(path)], capture_output=True, text=True, check=True, timeout=60).stdout
     if suffix == ".pdf":
         return read_pdf_text(path)
     if suffix == ".docx":
         return read_docx_text(path)
+    if suffix == ".pptx":
+        return read_pptx_text(path)
+    if suffix == ".xlsx":
+        return read_xlsx_text(path)
     if suffix == ".pages":
         return read_pages_text(path)
 
@@ -322,6 +417,8 @@ def extract_references(text: str) -> list[str]:
 
 
 def init_db(conn: sqlite3.Connection) -> None:
+    conn.execute("PRAGMA foreign_keys=ON;")
+    conn.execute("PRAGMA busy_timeout=30000;")
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
 
@@ -368,9 +465,13 @@ def init_db(conn: sqlite3.Connection) -> None:
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_rel_path ON documents(rel_path)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_chunk_refs_ref ON chunk_refs(scripture_ref)")
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(documents)")}
+    for name, kind in (("file_size", "INTEGER"), ("modified_ns", "INTEGER"), ("content_sha256", "TEXT")):
+        if name not in columns:
+            conn.execute(f"ALTER TABLE documents ADD COLUMN {name} {kind}")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunk_refs_chunk ON chunk_refs(chunk_id)")
     conn.commit()
-
-
 
 
 # Helper functions for document management
@@ -394,23 +495,16 @@ def get_existing_document(conn: sqlite3.Connection, rel_path: str) -> tuple[int,
 
 
 def delete_document_by_id(conn: sqlite3.Connection, document_id: int) -> None:
-    chunk_rows = conn.execute(
-        "SELECT id FROM chunks WHERE document_id = ?",
-        (document_id,),
-    ).fetchall()
-    chunk_ids = [row[0] for row in chunk_rows]
-
-    for chunk_id in chunk_ids:
-        conn.execute("DELETE FROM chunk_refs WHERE chunk_id = ?", (chunk_id,))
-        conn.execute(
-            "INSERT INTO chunks_fts(chunks_fts, rowid, content, title, rel_path, source_type) "
-            "VALUES('delete', ?, '', '', '', '')",
-            (chunk_id,),
-        )
-
-    conn.execute("DELETE FROM chunks WHERE document_id = ?", (document_id,))
-    conn.execute("DELETE FROM documents WHERE id = ?", (document_id,))
-
+    rows = conn.execute("""
+        SELECT c.id, c.content, d.title, d.rel_path, d.source_type
+        FROM chunks c JOIN documents d ON d.id=c.document_id WHERE d.id=?
+    """, (document_id,)).fetchall()
+    for row in rows:
+        # Contentless FTS5 requires exactly the original indexed values.
+        conn.execute("INSERT INTO chunks_fts(chunks_fts,rowid,content,title,rel_path,source_type) VALUES('delete',?,?,?,?,?)", row)
+        conn.execute("DELETE FROM chunk_refs WHERE chunk_id=?", (row[0],))
+    conn.execute("DELETE FROM chunks WHERE document_id=?", (document_id,))
+    conn.execute("DELETE FROM documents WHERE id=?", (document_id,))
 
 
 def remove_stale_documents(conn: sqlite3.Connection, valid_rel_paths: set[str]) -> None:
@@ -424,26 +518,34 @@ def index_file(conn: sqlite3.Connection, path: Path) -> None:
     rel_path = get_rel_path(path)
     title = path.stem
     source_type = guess_source_type(path)
-    modified_time = path.stat().st_mtime
+    stat = path.stat()
+    modified_time = stat.st_mtime
     indexed_at = datetime.now().isoformat(timespec="seconds")
-
     existing = get_existing_document(conn, rel_path)
-    if existing is not None:
-        existing_id, existing_modified_time, existing_source_type = existing
-        if existing_modified_time == modified_time and existing_source_type == source_type:
-            print(f"Skipped unchanged: {rel_path}")
+    fingerprint = conn.execute("SELECT file_size, modified_ns, content_sha256 FROM documents WHERE rel_path=?", (rel_path,)).fetchone()
+    if existing and existing[2] == source_type:
+        if fingerprint[0] == stat.st_size and fingerprint[1] == stat.st_mtime_ns:
             return
-        if existing_modified_time == modified_time and existing_source_type != source_type:
-            print(f"Reclassifying: {rel_path} ({existing_source_type} -> {source_type})")
-        delete_document_by_id(conn, existing_id)
-
+        # Adopt metadata for pre-migration entries without reopening unchanged Pages.
+        if fingerprint[0] is None and existing[1] == modified_time:
+            conn.execute("UPDATE documents SET file_size=?,modified_ns=? WHERE id=?", (stat.st_size,stat.st_mtime_ns,existing[0]))
+            conn.commit()
+            return
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if existing and existing[2] == source_type and fingerprint[2] == digest:
+        conn.execute("UPDATE documents SET modified_time=?,file_size=?,modified_ns=? WHERE id=?", (modified_time,stat.st_size,stat.st_mtime_ns,existing[0]))
+        conn.commit()
+        return
     text = read_text(path)
     if not text.strip():
-        return
-
+        raise RuntimeError(f"Extraction empty or failed; previous index retained: {path}")
+    after = path.stat()
+    if (after.st_size,after.st_mtime_ns) != (stat.st_size,stat.st_mtime_ns):
+        raise RuntimeError(f"File changed during extraction; retry next run: {path}")
     chunks = split_into_chunks(text)
-    if not chunks:
-        return
+    # All writes below are one transaction; caller rolls back on any failure.
+    if existing:
+        delete_document_by_id(conn, existing[0])
 
     cur = conn.cursor()
     cur.execute("""
@@ -451,6 +553,7 @@ def index_file(conn: sqlite3.Connection, path: Path) -> None:
         VALUES (?, ?, ?, ?, ?)
     """, (rel_path, title, source_type, modified_time, indexed_at))
     document_id = cur.lastrowid
+    cur.execute("UPDATE documents SET file_size=?,modified_ns=?,content_sha256=? WHERE id=?", (stat.st_size,stat.st_mtime_ns,digest,document_id))
 
     for idx, chunk in enumerate(chunks):
         cur.execute("""
@@ -480,16 +583,29 @@ def main() -> None:
     conn = sqlite3.connect(DB_PATH)
     try:
         init_db(conn)
+        from repair_search_index import repair
+        if repair(conn):
+            print("Repaired full-text index from stored chunks; source files were not reopened.", flush=True)
 
         files = collect_files()
         valid_rel_paths = {get_rel_path(path) for path in files}
-        remove_stale_documents(conn, valid_rel_paths)
+        # Do not automatically prune: an unavailable iCloud root is not a deletion.
+        # Missing paths remain searchable pending an explicit reconciliation.
         conn.commit()
 
         print(f"Found {len(files)} files to index.\n")
 
+        failures = []
         for path in files:
-            index_file(conn, path)
+            try:
+                index_file(conn, path)
+            except Exception as exc:
+                conn.rollback()
+                failures.append({"path": str(path), "error": str(exc)})
+                print(f"ERROR: {path}: {exc}", flush=True)
+        atomic_write_text(DB_PATH.parent / "index_errors.json", json.dumps(failures, indent=2))
+        if failures:
+            raise RuntimeError(f"{len(failures)} files failed; see index_errors.json")
 
         print(f"\nIndex complete: {DB_PATH}")
     finally:

@@ -4,6 +4,7 @@ import html as html_lib
 import json
 import re
 import sys
+from pipeline_support import atomic_write_text, excluded_resource
 from pathlib import Path
 from typing import List, Dict
 from urllib.parse import unquote, urljoin, urlparse, urlunparse
@@ -150,6 +151,8 @@ def extract_links(html: str) -> List[Dict[str, str]]:
     deduped = []
     seen = set()
     for link in links:
+        if excluded_resource(link):
+            continue
         key = link["url"]
         if key not in seen:
             seen.add(key)
@@ -189,7 +192,7 @@ def write_manifest(manifest: Dict) -> Path:
     course_root.mkdir(parents=True, exist_ok=True)
 
     manifest_path = course_root / "course_manifest_raw.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    atomic_write_text(manifest_path, json.dumps(manifest, indent=2))
 
     return manifest_path
 

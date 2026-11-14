@@ -115,12 +115,10 @@ This includes:
 
 Authenticated Moodle files may be downloaded through Safari using a course's
 `download_queue.html`. On the next update, `import_lfbi_downloads.py` scans the
-Downloads folder and safely copies unique, high-confidence matches into the
-correct LFBI course and week folders. It never deletes the original download.
+Downloads folder and files new unique, high-confidence downloads into the correct LFBI course and week folders by moving them once. Identical files already in registered/reference libraries are reused in place. No automatic Trash cleanup runs. Ambiguous downloads remain untouched.
 
 LFBI retakes are treated as another enrollment in the same canonical class.
-Matching resources are reused, and an existing week transcript is referenced
-instead of transcribing the same lecture again. Material that does not confidently
+Matching resources are reused, and an existing transcript with the same video URL is referenced instead of transcribing the same lecture again. A course/week match alone is not sufficient evidence. Material that does not confidently
 match an earlier resource remains separate for review.
 
 The latest intake report is written to:
@@ -166,3 +164,16 @@ These are kept for reference but should not be treated as the main active pipeli
 - The live index is currently built through `import_commentaries.py`
 - The updater script is `update_bible_study_aid.sh`
 - The local search app uses the current database built by the active workflow
+
+## October 2026 reliability update
+
+- Updates use a crash-safe advisory lock and exit nonzero on stage failures. Independent stages still run; see `STAGE FAILED` in the log. A leftover old `/tmp/bible_study_aid_update.lock` requires checking for a legacy run before retrying.
+- Document replacement retains old search data when extraction fails. `99_Index/index_errors.json` records per-file failures. Missing source roots no longer automatically purge documents.
+- Size/nanosecond modification time and content hashes support incremental updates. Legacy unchanged metadata is adopted without reopening Pages. Rich-format extraction improvements apply to new/changed files; existing documents are not force-reprocessed.
+- A one-time FTS repair reconstructs search postings from existing database chunks. It does not reread original documents. `pipeline_metadata` records completion.
+- The Scripture index now derives from the same SQLite documents/chunks as the search app, including external library originals, PDFs and Pages.
+- Explicit English captions are consumed before speech model loading. Audio is retained by default, as are subtitle timing files and download metadata. `transcribe_audio_batch.py --delete-audio` is an explicit audio-only cleanup option; do not use it as a general library cleanup command.
+- Local duplicates are matched by content hash during LFBI intake. Quizzes, grades and administrative assessment links are rejected at multiple intake boundaries. Authenticated resource downloads continue to use Safari.
+- Retired copy/rebuild/pilot entry points refuse execution but remain available as reference source.
+
+The audit report in the task workspace records remaining limitations and regression tests. Do not treat a source's download archive as proof that its transcript exists, or a historical `Update complete.` log as proof that every download succeeded.

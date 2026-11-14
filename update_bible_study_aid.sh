@@ -2,21 +2,14 @@
 
 set -u
 
-# Prevent multiple updater runs at the same time
-LOCK_FILE="/tmp/bible_study_aid_update.lock"
-
-if [ -f "$LOCK_FILE" ]; then
-    echo "Bible Study Aid updater is already running. Exiting."
-    osascript -e 'display notification "Another Bible Study Aid update is already running." with title "Bible Study Aid" sound name "Glass"'
-    exit 1
+# A kernel lock survives crashes safely and serializes all current updater runs.
+PYTHON_BIN="${BIBLE_STUDY_PYTHON:-/usr/local/bin/python3.14}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ "${BIBLE_STUDY_LOCKED:-}" != "1" ]; then
+    exec "$PYTHON_BIN" "$SCRIPT_DIR/pipeline_lock.py" "$0" "$@"
 fi
 
-touch "$LOCK_FILE"
-
-# Ensure lock file is removed when script exits
-trap 'rm -f "$LOCK_FILE"' EXIT
-
-BASE="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid"
+BASE="${BIBLE_STUDY_BASE:-$HOME/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid}"
 AUTOMATION_DIR="$BASE/98_Automation"
 SOURCES_FILE="$AUTOMATION_DIR/podcast_sources.tsv"
 LFF_SOURCES_FILE="$AUTOMATION_DIR/lff_church_sources.tsv"
@@ -28,7 +21,7 @@ SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 COVERAGE_REPORTER="$AUTOMATION_DIR/report_library_status.py"
 LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
 TRANSCRIBER="$AUTOMATION_DIR/transcribe_audio_batch.py"
-PYTHON_BIN="/usr/local/bin/python3.14"
+PYTHON_BIN="${BIBLE_STUDY_PYTHON:-/usr/local/bin/python3.14}"
 YT_DLP=("$PYTHON_BIN" -m yt_dlp)
 
 MODE="${1:-backlog}"
@@ -45,7 +38,23 @@ LANGUAGE_CONFIDENCE="${BIBLE_STUDY_LANGUAGE_CONFIDENCE:-0.75}"
 
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR"
 
-LOG_FILE="$LOG_DIR/update_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="$LOG_DIR/update_$(date +%Y%m%d_%H%M%S)_$$.log"
+FAILURES=0
+run_stage() {
+    local label="$1"
+    shift
+    echo "STAGE START: $label" | tee -a "$LOG_FILE"
+    if "$@" >> "$LOG_FILE" 2>&1; then
+        echo "STAGE OK: $label" | tee -a "$LOG_FILE"
+        return 0
+    else
+        local status=$?
+        echo "STAGE FAILED: $label (exit $status)" | tee -a "$LOG_FILE"
+        FAILURES=$((FAILURES + 1))
+        return "$status"
+    fi
+}
+
 
 echo "Starting Bible Study Aid update..." | tee -a "$LOG_FILE"
 echo "Mode: $MODE" | tee -a "$LOG_FILE"
@@ -95,10 +104,10 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing LFF blog posts..." | tee -a "$LOG_FILE"
 
 if [ -f "$LFF_BLOG_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$LFF_BLOG_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "LFF blog import complete." | tee -a "$LOG_FILE"
+    run_stage "LFF blog import" "$PYTHON_BIN" "$LFF_BLOG_IMPORTER"
 else
     echo "LFF blog importer not found: $LFF_BLOG_IMPORTER" | tee -a "$LOG_FILE"
+    FAILURES=$((FAILURES + 1))
 fi
 
 echo "" | tee -a "$LOG_FILE"
@@ -130,6 +139,9 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
         --download-archive "$ARCHIVE_FILE"
         -x
         --audio-format mp3
+        --socket-timeout 30
+        --retries 2
+        --fragment-retries 2
         --write-info-json
         -o "$DEST_DIR/%(title)s.%(ext)s"
     )
@@ -150,6 +162,11 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
         echo "Downloading new episodes..." | tee -a "$LOG_FILE"
         "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
     fi
+    DOWNLOAD_STATUS=$?
+    if [ "$DOWNLOAD_STATUS" -ne 0 ] && { [ "$DOWNLOAD_STATUS" -ne 101 ] || [ "$MODE" != "backlog" ]; }; then
+        echo "STAGE FAILED: download $NAME (exit $DOWNLOAD_STATUS)" | tee -a "$LOG_FILE"
+        FAILURES=$((FAILURES + 1))
+    fi
     echo "" | tee -a "$LOG_FILE"
 done < <(emit_selected_sources)
 
@@ -158,6 +175,7 @@ echo "Processing downloaded captions and audio as one resumable batch..." | tee 
 
 if [ ! -f "$TRANSCRIBER" ]; then
     echo "Batch transcriber not found: $TRANSCRIBER" | tee -a "$LOG_FILE"
+    FAILURES=$((FAILURES + 1))
 else
     TRANSCRIBE_ARGS=(
         "$TRANSCRIBER"
@@ -195,6 +213,10 @@ else
             --backend openai \
             --model "$OPENAI_WHISPER_MODEL" \
             "${TRANSCRIPTION_DIRS[@]}" >> "$LOG_FILE" 2>&1
+        TRANSCRIBE_STATUS=$?
+    fi
+    if [ "$TRANSCRIBE_STATUS" -ne 0 ]; then
+        FAILURES=$((FAILURES + 1))
     fi
 fi
 else
@@ -205,10 +227,10 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Importing completed LFBI browser downloads..." | tee -a "$LOG_FILE"
 
 if [ -f "$LFBI_DOWNLOAD_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$LFBI_DOWNLOAD_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "LFBI browser-download intake complete." | tee -a "$LOG_FILE"
+    run_stage "LFBI browser-download intake" "$PYTHON_BIN" "$LFBI_DOWNLOAD_IMPORTER"
 else
     echo "LFBI download importer not found: $LFBI_DOWNLOAD_IMPORTER" | tee -a "$LOG_FILE"
+    FAILURES=$((FAILURES + 1))
 fi
 
 echo "" | tee -a "$LOG_FILE"
@@ -217,10 +239,10 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Building searchable index..." | tee -a "$LOG_FILE"
 
 if [ -f "$COMMENTARIES_IMPORTER" ]; then
-    /usr/local/bin/python3.14 "$COMMENTARIES_IMPORTER" >> "$LOG_FILE" 2>&1
-    echo "Searchable index build complete." | tee -a "$LOG_FILE"
+    run_stage "Searchable index build" "$PYTHON_BIN" "$COMMENTARIES_IMPORTER"
 else
     echo "Indexer not found: $COMMENTARIES_IMPORTER" | tee -a "$LOG_FILE"
+    FAILURES=$((FAILURES + 1))
 fi
 
 echo "" | tee -a "$LOG_FILE"
@@ -229,26 +251,24 @@ echo "========================================" | tee -a "$LOG_FILE"
 echo "Building scripture index..." | tee -a "$LOG_FILE"
 
 if [ -f "$SCRIPTURE_INDEXER" ]; then
-    /usr/local/bin/python3.14 "$SCRIPTURE_INDEXER" >> "$LOG_FILE" 2>&1
-    echo "Scripture index complete." | tee -a "$LOG_FILE"
+    run_stage "Scripture index" "$PYTHON_BIN" "$SCRIPTURE_INDEXER"
 else
     echo "Scripture indexer not found: $SCRIPTURE_INDEXER" | tee -a "$LOG_FILE"
+    FAILURES=$((FAILURES + 1))
 fi
 
 echo "" | tee -a "$LOG_FILE"
 
-echo "========================================" | tee -a "$LOG_FILE"
-echo "Writing library coverage report..." | tee -a "$LOG_FILE"
-
-if [ -f "$COVERAGE_REPORTER" ]; then
-    /usr/local/bin/python3.14 "$COVERAGE_REPORTER" >> "$LOG_FILE" 2>&1
-    echo "Library coverage report complete." | tee -a "$LOG_FILE"
-else
-    echo "Coverage reporter not found: $COVERAGE_REPORTER" | tee -a "$LOG_FILE"
+if [ "$FAILURES" -ne 0 ]; then
+    echo "Update completed with $FAILURES failed stages; review this log." | tee -a "$LOG_FILE"
+    osascript -e 'display notification "Bible Study Aid update has errors. See the latest log." with title "Bible Study Aid"' || true
+    run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"
+    exit 1
 fi
-
-echo "" | tee -a "$LOG_FILE"
-
 echo "Update complete." | tee -a "$LOG_FILE"
+if ! run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"; then
+    echo "Update completed with $FAILURES failed stages; coverage report failed." | tee -a "$LOG_FILE"
+    exit 1
+fi
 echo "Log saved to: $LOG_FILE"
 osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'

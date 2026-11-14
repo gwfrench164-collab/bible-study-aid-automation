@@ -17,9 +17,10 @@ import shutil
 import subprocess
 import sys
 import time
+from pipeline_support import atomic_write_text
 from pathlib import Path
 
-import numpy as np
+
 
 
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".webm", ".opus", ".wav", ".mp4"}
@@ -30,6 +31,7 @@ UNKNOWN_LANGUAGE_NAMES = {"", "und", "unknown", "none", "null"}
 
 
 def load_audio_excerpt(audio_path: Path, seconds: int = 30) -> np.ndarray:
+    import numpy as np
     ffmpeg = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
     if not Path(ffmpeg).is_file():
         raise RuntimeError("ffmpeg is required for language detection")
@@ -122,6 +124,8 @@ def is_related_sidecar(audio_path: Path, candidate: Path) -> bool:
         or candidate.suffix.lower() not in SIDE_CAR_EXTENSIONS
     ):
         return False
+    if not candidate.name.startswith(base.name):
+        return False
     remainder = candidate.name[len(base.name) :]
     if remainder == candidate.suffix:
         return True
@@ -175,7 +179,7 @@ def write_language_skip_marker(
 
 def caption_candidates(audio_path: Path) -> list[Path]:
     base = audio_path.with_suffix("")
-    matches = sorted(base.parent.glob(f"{base.name}*.vtt"))
+    matches = sorted(p for p in base.parent.iterdir() if p.name.startswith(base.name) and p.suffix.lower() in {".vtt", ".srt"})
     return [
         path
         for path in matches
@@ -183,25 +187,24 @@ def caption_candidates(audio_path: Path) -> list[Path]:
     ]
 
 
-def transcript_from_caption(audio_path: Path) -> Path | None:
-    for caption_path in caption_candidates(audio_path):
+def transcript_from_caption(audio_path: Path, candidates=None) -> Path | None:
+    for caption_path in (caption_candidates(audio_path) if candidates is None else candidates):
         text = normalize_caption_text(
             caption_path.read_text(encoding="utf-8", errors="ignore")
         )
         if not text:
             continue
         output_path = audio_path.with_suffix(".txt")
-        output_path.write_text(text + "\n", encoding="utf-8")
+        atomic_write_text(output_path, text + "\n")
         print(f"Caption transcript created: {output_path.name}", flush=True)
         return output_path
     return None
 
 
 def cleanup_completed_audio(audio_path: Path) -> None:
-    base = audio_path.with_suffix("")
-    for path in base.parent.glob(f"{base.name}*"):
-        if path == audio_path or is_related_sidecar(audio_path, path):
-            path.unlink(missing_ok=True)
+    # Keep captions/timestamps and info.json as source evidence. Audio retention
+    # is the default; --delete-audio is an explicit storage-management choice.
+    audio_path.unlink(missing_ok=True)
 
 
 class OpenAIBackend:
@@ -301,7 +304,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--time-budget-minutes", type=float, default=0.0)
     parser.add_argument("--language-confidence", type=float, default=0.75)
-    parser.add_argument("--keep-audio", action="store_true")
+    parser.add_argument("--keep-audio", action="store_true", default=True)
+    parser.add_argument("--delete-audio", action="store_false", dest="keep_audio")
     args = parser.parse_args()
     if not 0 <= args.language_confidence <= 1:
         parser.error("--language-confidence must be between 0 and 1")
@@ -348,6 +352,13 @@ def main() -> int:
                 )
                 break
 
+        # Explicitly English captions can be imported without loading Whisper.
+        english = [p for p in caption_candidates(audio_path) if re.search(r"\.en(?:[-.][A-Za-z0-9]+)*\.(?:vtt|srt)$", p.name, re.I)]
+        if english and transcript_from_caption(audio_path, english) is not None:
+            completed += 1
+            if not args.keep_audio:
+                cleanup_completed_audio(audio_path)
+            continue
         known_language = metadata_language(audio_path)
         language_source = "download metadata"
         language_confidence: float | None = None
@@ -415,7 +426,7 @@ def main() -> int:
             text = backend.transcribe(audio_path)
             if not text:
                 raise RuntimeError("speech recognition returned an empty transcript")
-            transcript_path.write_text(text + "\n", encoding="utf-8")
+            atomic_write_text(transcript_path, text + "\n")
             completed += 1
             print(f"Transcript created: {transcript_path.name}", flush=True)
             if not args.keep_audio:
