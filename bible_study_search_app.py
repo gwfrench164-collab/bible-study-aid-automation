@@ -382,9 +382,10 @@ PAGE_TEMPLATE = """
                     <button type="submit">Search</button>
                 </div>
             </div>
-            <label class="sort-control">Order within each group
-                <select name="sort"><option value="rank">Best match first</option>
-                <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A–Z</option></select>
+            <label class="sort-control">Result order
+                <select name="sort"><option value="rank">Best match by source type</option>
+                <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A–Z by source type</option>
+                <option value="library" {% if sort == 'library' %}selected{% endif %}>Best matches across the library</option></select>
             </label>
             <div class="hint"><strong>Best matches</strong> is broad and ranked. Use <strong>All words</strong> to narrow a topic, or <strong>Exact phrase</strong> when wording matters.</div>
         </form>
@@ -397,7 +398,7 @@ PAGE_TEMPLATE = """
             </div>
 
             {% if grouped_results %}
-                {% for group in grouped_results %}
+                {% for group in display_groups %}
                 <details class="group-section" open>
                     <summary class="group-toggle">{{ group['label'] }} ({{ group['count'] }})</summary>
                     <div class="group-body">
@@ -407,14 +408,20 @@ PAGE_TEMPLATE = """
                             <div>
                                 <div class="result-title">{{ item.highlighted_title | safe }}</div>
                                 <div class="badges">
+                                    {% if sort == "library" %}<span class="badge">{{ source_label(item.source_type) }}</span>{% endif %}
                                     <span class="badge">{{ item.format }}</span>
                                     {% if item.context %}<span class="badge badge-muted">{{ item.context }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
-                        <div class="snippet">{{ item.snippet | safe }}</div>
+                        {% for passage in item.passages %}
+                        {% if loop.index == 2 %}<details><summary>Show {{ loop.length - 1 }} more {{ 'passage' if loop.length == 2 else 'passages' }}</summary>{% endif %}
+                        {% if passage.evidence %}<small>{{ passage.evidence }}</small>{% endif %}
+                        <div class="snippet">{{ passage.snippet | safe }}</div>
+                        <a class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort) }}">Read this passage</a>
+                        {% if loop.last and loop.length > 1 %}</details>{% endif %}
+                        {% endfor %}
                         <div class="result-actions">
-                            <a class="result-link" href="/open?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}">{{ 'Preview text' if item.format in ['TXT', 'MD'] else 'Open Source' }}</a>
                             <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}">Show in Finder</a>
                         </div>
                         <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
@@ -614,6 +621,8 @@ def apply_highlighting(results, query: str):
         updated = deepcopy(item)
         updated["highlighted_title"] = highlight_text(item.get("title", ""), pattern)
         updated["snippet"] = highlight_text(item.get("snippet", ""), pattern)
+        for passage in updated["passages"]:
+            passage["snippet"] = highlight_text(passage["snippet"], pattern)
         highlighted.append(updated)
 
     return highlighted
@@ -679,10 +688,13 @@ def run_desktop_app():
         server.join(timeout=2)
 
 def render_page(query, selected_source_types, search_mode, limit, results, searched):
-    sort = "title" if request.args.get("sort") == "title" else "rank"
+    sort = request.args.get("sort") if request.args.get("sort") in {"library", "title"} else "rank"
     enriched_results = add_result_context(results)
     if sort == "title":
         enriched_results.sort(key=lambda item: (item["title"] or "").casefold())
+    groups = group_results(enriched_results)
+    display_groups = ([{"label": "Best matches across the library", "count": len(enriched_results),
+                        "items": enriched_results}] if sort == "library" else groups)
     return render_template_string(
         PAGE_TEMPLATE,
         query=query,
@@ -692,7 +704,9 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
         limit=limit,
         results=enriched_results,
         sort=sort,
-        grouped_results=group_results(enriched_results),
+        grouped_results=groups,
+        display_groups=display_groups,
+        source_label=source_type_label,
         searched=searched,
     )
 
@@ -739,21 +753,44 @@ def open_source():
     search_mode = normalize_search_mode(request.args.get("mode", "balanced"))
     limit = normalize_limit(request.args.get("limit", "20"))
     return_args = [("q", query), ("mode", search_mode), ("limit", str(limit))]
-    return_args.append(("sort", "title" if request.args.get("sort") == "title" else "rank"))
+    return_args.append(("sort", request.args.get("sort") if request.args.get("sort") in {"library", "title"} else "rank"))
     return_args.extend(("source_types", value) for value in selected_source_types)
     return_url = "/?" + urlencode(return_args)
 
     action_args = urlencode(return_args + [("path", rel_path)])
+    chunk_id = request.args.get("chunk", type=int)
+    context = qbs.read_passage(rel_path, chunk_id) if chunk_id is not None else []
+    if "chunk" in request.args and not context:
+        abort(404, "This passage has changed. Search again to refresh the results.")
+    if context:
+        action_args += "&" + urlencode({"chunk": chunk_id})
     if request.args.get("native") == "1":
-        if not full_path.is_relative_to(BASE.resolve()) or not full_path.is_file():
+        if (not context and not full_path.is_relative_to(BASE.resolve())) or not full_path.is_file():
             abort(404)
-    elif full_path.suffix.lower() in {".txt", ".md"}:
-        try:
-            text = full_path.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            text = full_path.read_text(errors="ignore")
-
-        content_html = highlight_text(text, build_highlight_pattern(query))
+    elif context or full_path.suffix.lower() in {".txt", ".md"}:
+        pattern = build_highlight_pattern(query)
+        if context:
+            sections = []
+            for passage_id, text in context:
+                rendered = highlight_text(text, pattern)
+                if passage_id == chunk_id:
+                    snippet = qbs.build_snippet(text, query, qbs.get_topic_expansion_terms(query),
+                                                qbs.extract_query_reference(query))
+                    excerpt = snippet.removeprefix("...").removesuffix("...")
+                    start = text.replace("\n", " ").find(excerpt)
+                    if start >= 0 and excerpt:
+                        end = start + len(excerpt)
+                        rendered = (highlight_text(text[:start], pattern)
+                                    + '<span id="selected-excerpt">'
+                                    + highlight_text(text[start:end], pattern) + '</span>'
+                                    + highlight_text(text[end:], pattern))
+                    sections.append(f'<section id="selected-passage"><strong>Selected passage</strong><br>{rendered}</section>')
+                else:
+                    sections.append(rendered)
+            content_html = "\n\n".join(sections)
+        else:
+            text = full_path.read_text(encoding="utf-8", errors="replace")
+            content_html = highlight_text(text, pattern)
 
         html = f"""
         <!doctype html>
@@ -850,6 +887,7 @@ def open_source():
                     content.style.fontSize = Math.max(14, Math.min(30, current + direction)) + 'px';
                 }}
                 const matches = document.querySelectorAll('#source-content mark');
+                const selected = document.getElementById("selected-excerpt") || document.getElementById("selected-passage");
                 if (matches.length) {{
                     const previous = document.getElementById('previous-match');
                     const next = document.getElementById('next-match');
@@ -867,7 +905,11 @@ def open_source():
                     }}
                     previous.onclick = () => selectMatch(active - 1);
                     next.onclick = () => selectMatch(active + 1);
-                    selectMatch(0);
+                    const initial = selected ? Array.from(matches).findIndex(mark => selected.contains(mark)) : 0;
+                    selectMatch(Math.max(0, initial));
+                    if (initial < 0) selected.scrollIntoView({{block: 'center'}});
+                }} else if (selected) {{
+                    selected.scrollIntoView({{block: 'center'}});
                 }}
             </script>
         </body>

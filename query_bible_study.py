@@ -290,6 +290,21 @@ def build_snippet(text: str, query: str, topic_terms=None, query_reference=None)
     return snippet
 
 
+def read_passage(path, chunk_id):
+    """Read the selected indexed passage and its immediate neighbors in source order."""
+    conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
+    try:
+        return conn.execute("""
+            SELECT context.id, context.content FROM chunks selected
+            JOIN documents d ON d.id = selected.document_id
+            JOIN chunks context ON context.document_id = d.id
+             AND context.chunk_index BETWEEN selected.chunk_index - 1 AND selected.chunk_index + 1
+            WHERE selected.id = ? AND d.rel_path = ? ORDER BY context.chunk_index
+        """, (chunk_id, path)).fetchall()
+    finally:
+        conn.close()
+
+
 def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced"):
     query_tokens = normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
@@ -345,6 +360,7 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
             for row in ref_rows:
                 results.append({
                     "score": 1000,
+                    "chunk_id": row["chunk_id"],
                     "title": row["title"],
                     "path": row["rel_path"],
                     "source_type": row["source_type"],
@@ -426,35 +442,43 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
 
                 results.append({
                     "score": score,
+                    "chunk_id": row["chunk_id"],
                     "title": row["title"],
                     "path": row["rel_path"],
                     "source_type": row["source_type"],
                     "snippet": build_snippet(text, query, topic_terms, query_reference),
                 })
 
-        deduped = []
-        seen = set()
-        for item in sorted(results, key=lambda x: (-x["score"], x["path"])):
-            key = (item["path"], item["snippet"])
-            if key in seen:
+        refs_by_chunk = {}
+        if query_reference and results:
+            ids = sorted({item["chunk_id"] for item in results})
+            placeholders = ",".join("?" for _ in ids)
+            for chunk_id, ref in conn.execute(
+                f"SELECT chunk_id, scripture_ref FROM chunk_refs WHERE chunk_id IN ({placeholders})", ids
+            ):
+                refs_by_chunk.setdefault(chunk_id, set()).add(ref)
+
+        sources = {}
+        seen_chunks = set()
+        for item in sorted(results, key=lambda x: (-x["score"], x["path"], x["chunk_id"])):
+            chunk_id = item["chunk_id"]
+            if chunk_id in seen_chunks:
                 continue
-            seen.add(key)
-            deduped.append(item)
-
-        final_results = []
-        seen_paths = set()
-
-        for item in deduped:
-            if item["path"] in seen_paths:
-                continue
-
-            final_results.append(item)
-            seen_paths.add(item["path"])
-
-            if len(final_results) >= limit:
-                break
-
-        return final_results
+            seen_chunks.add(chunk_id)
+            refs = refs_by_chunk.get(chunk_id, set())
+            chapter = (query_reference or "").partition(":")[0]
+            if query_reference in refs:
+                evidence = f"Cites {query_reference}"
+            elif chapter and any(ref.partition(":")[0] == chapter for ref in refs):
+                evidence = f"Mentions {chapter}"
+            else:
+                evidence = "Search-word match" if query_reference else ""
+            passage = {"chunk_id": chunk_id, "snippet": item["snippet"], "evidence": evidence}
+            if item["path"] in sources:
+                sources[item["path"]]["passages"].append(passage)
+            elif len(sources) < limit:
+                sources[item["path"]] = {**item, "passages": [passage]}
+        return list(sources.values())
 
     finally:
         conn.close()
