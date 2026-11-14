@@ -391,12 +391,10 @@ PAGE_TEMPLATE = """
 
         {% if searched %}
             <div class="results-meta">Showing {{ results|length }} {{ 'result' if results|length == 1 else 'results' }}{% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
-            {% if grouped_results %}
             <div class="results-summary">
                 {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit, sort=sort) }}">All sources</a>{% endif %}
                 {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit, sort=sort) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
             </div>
-            {% endif %}
 
             {% if grouped_results %}
                 {% for group in grouped_results %}
@@ -437,15 +435,7 @@ PAGE_TEMPLATE = """
                     <a class="example-link" href="/?q=spiritual+leadership">Spiritual leadership</a>
                     <a class="example-link" href="/?q=premillennial+rapture">Premillennial rapture</a>
                 </div>
-                <div class="quick-start">
-                    <div><strong>Quick start:</strong></div>
-                    <div>1. Type a Bible reference, topic, phrase, author, or book title in the search box.</div>
-                    <div>2. Click <strong>Search</strong>.</div>
-                    <div>3. Use <strong>Source Types</strong> to narrow results to commentaries, church sermons, podcasts, blogs, sermon notes, or LFBI.</div>
-                    <div>4. Increase <strong>Results</strong> if you want a broader survey.</div>
-                    <div>5. Use <strong>Open Source</strong> to open a result and <strong>Show in Finder</strong> to jump to its location.</div>
-                    <div>6. This app searches a growing local library, so results will improve as more sources are added over time.</div>
-                </div>
+
             </div>
         {% endif %}
     </div>
@@ -808,6 +798,9 @@ def open_source():
                     font-weight: 650;
                     cursor: pointer;
                 }}
+                mark.current {{ outline: 2px solid #774a02; background: #ffd077; }}
+                .match-controls {{ display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-block: 4px; }}
+                .match-controls[hidden] {{ display: none; }}
                 .font-controls {{ display: flex; gap: 6px; }}
                 h1 {{
                     font-size: 28px;
@@ -841,6 +834,11 @@ def open_source():
                     <button type="button" onclick="resizeText(-1)" aria-label="Decrease text size">A−</button>
                     <button type="button" onclick="resizeText(1)" aria-label="Increase text size">A+</button>
                 </div>
+                <div class="match-controls" id="match-controls" hidden>
+                    <button type="button" id="previous-match">Previous match</button>
+                    <span id="match-count" aria-live="polite"></span>
+                    <button type="button" id="next-match">Next match</button>
+                </div>
             </div>
             <h1>{escape(full_path.name)}</h1>
             <div class="location">{escape(rel_path)}</div>
@@ -851,8 +849,26 @@ def open_source():
                     const current = parseFloat(getComputedStyle(content).fontSize);
                     content.style.fontSize = Math.max(14, Math.min(30, current + direction)) + 'px';
                 }}
-                const firstMatch = document.querySelector('mark');
-                if (firstMatch) firstMatch.scrollIntoView({{block: 'center'}});
+                const matches = document.querySelectorAll('#source-content mark');
+                if (matches.length) {{
+                    const previous = document.getElementById('previous-match');
+                    const next = document.getElementById('next-match');
+                    const count = document.getElementById('match-count');
+                    document.getElementById('match-controls').hidden = false;
+                    let active = 0;
+                    function selectMatch(index) {{
+                        matches[active].classList.remove('current');
+                        active = index;
+                        matches[active].classList.add('current');
+                        matches[active].scrollIntoView({{block: 'center'}});
+                        count.textContent = 'Match ' + (active + 1) + ' of ' + matches.length;
+                        previous.disabled = active === 0;
+                        next.disabled = active === matches.length - 1;
+                    }}
+                    previous.onclick = () => selectMatch(active - 1);
+                    next.onclick = () => selectMatch(active + 1);
+                    selectMatch(0);
+                }}
             </script>
         </body>
         </html>
