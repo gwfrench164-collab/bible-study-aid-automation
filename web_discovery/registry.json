@@ -1,0 +1,1242 @@
+{
+  "authors": [
+    "Clarence Larkin",
+    "C. I. Scofield",
+    "John Nelson Darby",
+    "H. A. Ironside",
+    "Oliver B. Greene",
+    "J. Vernon McGee",
+    "E. M. Bounds",
+    "George Müller",
+    "Charles Spurgeon",
+    "C. T. Studd",
+    "J. Frank Norris",
+    "Peter S. Ruckman",
+    "John Phillips",
+    "Warren Wiersbe",
+    "George Whitefield",
+    "Hudson Taylor",
+    "Adoniram Judson",
+    "William Carey",
+    "David Brainerd",
+    "J. Sidlow Baxter",
+    "Richard Scheer",
+    "David Cloud",
+    "Stanley D. Toussaint",
+    "Chuck Missler",
+    "Trent C. Butler",
+    "Robert Hawker",
+    "R. E. Neighbour",
+    "Manford George Gutzke",
+    "Eric Phillips",
+    "John Chrysostom",
+    "G. Campbell Morgan",
+    "Homer A. Kent Jr.",
+    "Flavius Josephus",
+    "Horatio B. Hackett",
+    "B. W. Johnson",
+    "Arthur W. Pink",
+    "Alan Shelby",
+    "Matthew Henry",
+    "Henry Morris",
+    "Irving L. Jensen",
+    "James Montgomery Boice",
+    "John G. Butler",
+    "David Rohl",
+    "W. H. Griffith Thomas",
+    "Ada Habershon",
+    "John Ritchie",
+    "James Philip",
+    "John Maxwell",
+    "Charles Swindoll",
+    "Kevin Conner",
+    "Gene Getz",
+    "Francis Schaeffer",
+    "Papias",
+    "Clement of Rome",
+    "Ignatius of Antioch",
+    "Cyprian",
+    "Epictetus",
+    "Origen",
+    "Eusebius of Caesarea",
+    "Pamphilus of Caesarea",
+    "Augustine of Hippo",
+    "Jerome",
+    "Theodore of Mopsuestia",
+    "Bede",
+    "Desiderius Erasmus",
+    "John Calvin",
+    "Martin Luther",
+    "Pierre Olivetan",
+    "Huldreich Zwingli",
+    "Jonathan Edwards",
+    "Charles Darwin",
+    "Samuel Tregelles",
+    "Constantine Tischendorf",
+    "Brooke Foss Westcott",
+    "Fenton John Anthony Hort",
+    "John William Burgon",
+    "Herman Hoskier",
+    "Robert Dick Wilson",
+    "J. M. Carroll",
+    "Sue Bohlin",
+    "James W. Sire",
+    "E. W. Bullinger",
+    "G. H. Pember",
+    "M. R. DeHaan",
+    "C. H. Mackintosh",
+    "Franz Delitzsch",
+    "Arno C. Gaebelein",
+    "Donald Barnhouse",
+    "Merrill F. Unger",
+    "Philo of Alexandria",
+    "Justin Martyr",
+    "Athenagoras",
+    "Tertullian",
+    "Lactantius",
+    "William L. Lane",
+    "John MacArthur",
+    "G. K. Chesterton",
+    "C. S. Lewis",
+    "Helmut Koester",
+    "Polycarp",
+    "Harold Willmington",
+    "Walter Chantry",
+    "Greg Axe",
+    "J. Dwight Pentecost",
+    "John F. Walvoord",
+    "Henrietta C. Mears",
+    "R. A. Torrey",
+    "James Strong",
+    "Robert Young",
+    "Alexander Cruden",
+    "Homer C. House",
+    "Susan Emolyn Harman",
+    "Jay Edward Adams",
+    "Tim Stafford",
+    "Edward E. Hindson",
+    "Howard Eyrich",
+    "Harold I. Kaplan",
+    "Benjamin J. Sadock",
+    "Thomas Szasz",
+    "William Glasser",
+    "E. Fuller Torrey",
+    "Ed Bulkley",
+    "Gary R. Collins",
+    "Wayne E. Oates",
+    "Heinrich Meng",
+    "Ernst Freud",
+    "Sigmund Freud",
+    "Kelly Brogan",
+    "William Hines",
+    "Irenaeus",
+    "F. F. Bruce",
+    "Grant Osborne",
+    "Charles Ryrie",
+    "George Wald",
+    "William Tyndale",
+    "Albert Barnes",
+    "John J. Owen",
+    "John Wycliffe",
+    "Chris Best"
+  ],
+  "works": [
+    {
+      "author": "George Müller",
+      "title": "Answers to Prayer, from George Müller's Narratives",
+      "edition": "Project Gutenberg #25891, edited by A. E. C. Brooks, ebook released June 24, 2008",
+      "url": "https://www.gutenberg.org/ebooks/25891",
+      "permission": "public domain in USA",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/25891",
+      "match_phrase": "answers to prayer",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Answers-to-Prayer.pdf",
+      "sha256": "ba84b5fd61a5ba3f2dcfb064124f5aba2716daf8072dd27ab8f91da29c11f351",
+      "passages": [
+        {
+          "reference": "Psalms 81:10",
+          "anchor": "I was reading Psalm lxxxi., and was particularly struck",
+          "use": "Application to prayer for the orphan house"
+        },
+        {
+          "reference": "Psalms 81:10",
+          "anchor": "I came to Psalm lxxxi, 10, and remembered",
+          "use": "Retrospective application in 1892"
+        }
+      ]
+    },
+    {
+      "author": "E. M. Bounds",
+      "title": "Power Through Prayer",
+      "edition": "Project Gutenberg #65115, released April 19, 2021",
+      "url": "https://www.gutenberg.org/ebooks/65115",
+      "permission": "public domain in USA",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/65115",
+      "match_phrase": "power through prayer",
+      "discovered_on": "2026-11-14"
+    },
+    {
+      "author": "E. M. Bounds",
+      "title": "Power Through Prayer",
+      "url": "https://www.ccel.org/ccel/bounds/power.html",
+      "edition": "Christian Classics Ethereal Library, July 9, 2000, identified on the local PDF publication page",
+      "permission": "pending review",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "match_phrase": "power through prayer",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/E.M. Bounds/Power Through Prayer.pdf"
+    },
+    {
+      "author": "Charles Spurgeon",
+      "title": "Treasury of David: Volume I",
+      "url": "https://ccel.org/ccel/spurgeon/treasury1",
+      "edition": "CCEL edition, Psalms 1–26",
+      "permission": "pending review",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "match_phrase": "treasury of david: volume i"
+    },
+    {
+      "author": "Clarence Larkin",
+      "title": "Dispensational Truth",
+      "url": "https://archive.org/details/dispensationaltr0000clar_o0h0",
+      "edition": "Internet Archive catalog record, publication details to review",
+      "permission": "pending review",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "match_phrase": "dispensational truth"
+    }
+  ],
+  "directories": [
+    {
+      "name": "Christian Classics Ethereal Library",
+      "url": "https://ccel.org/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Princeton Theological Commons",
+      "url": "https://commons.ptsem.edu/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Internet Archive Texts",
+      "url": "https://archive.org/details/texts",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "BiblicalStudies.org.uk",
+      "url": "https://biblicalstudies.org.uk/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Open Access Digital Theological Library",
+      "url": "https://libguides.thedtl.org/home",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Google Books",
+      "url": "https://books.google.com/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Directory of Open Access Books",
+      "url": "https://doabooks.org/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    },
+    {
+      "name": "Project Gutenberg",
+      "url": "https://gutenberg.org/",
+      "found_at": "https://mylfbi.org/mod/page/view.php?id=18215",
+      "checked": "2026-11-14",
+      "permission": "discovery only"
+    }
+  ],
+  "handout_citations": {
+    "J. Sidlow Baxter": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Baxter",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Richard Scheer": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Richard Scheer",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "David Cloud": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "David Cloud",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Stanley D. Toussaint": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Stanley D. Toussaint",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Chuck Missler": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Chuck Missler",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Trent C. Butler": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Trent C. Butler",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Robert Hawker": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Robert Hawker",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "R. E. Neighbour": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+        "page": 12,
+        "as_cited": "Neighbour",
+        "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      }
+    ],
+    "Manford George Gutzke": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
+        "page": 1,
+        "as_cited": "Manford G. Gutzke",
+        "handout_sha256": "2de5d3a1eee1a5deec966e964c0aa0f1d82e8e347f063193c18976637d380971"
+      }
+    ],
+    "Eric Phillips": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
+        "page": 8,
+        "as_cited": "Eric Phillips",
+        "handout_sha256": "2de5d3a1eee1a5deec966e964c0aa0f1d82e8e347f063193c18976637d380971"
+      }
+    ],
+    "John Chrysostom": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_03_Acts_18-Acts_2/handouts/Handout week 3 - Acts 2.pdf",
+        "page": 8,
+        "as_cited": "John Chrysostom",
+        "handout_sha256": "25faae6499d5d505852fda0d968d2c5693175bad9b2bce010eaebf740b313707"
+      }
+    ],
+    "G. Campbell Morgan": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_06/handouts/Handout week 6 - Acts 2-4.pdf",
+        "page": 2,
+        "as_cited": "G. Campbell Morgan",
+        "handout_sha256": "ba739be329262877669331f555802e9ad292e065454c0d8b36834f9ff85dfddb"
+      }
+    ],
+    "Homer A. Kent Jr.": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_06/handouts/Handout week 6 - Acts 2-4.pdf",
+        "page": 6,
+        "as_cited": "Homer A. Kent",
+        "handout_sha256": "ba739be329262877669331f555802e9ad292e065454c0d8b36834f9ff85dfddb"
+      }
+    ],
+    "Flavius Josephus": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_06/handouts/Handout week 6 - Acts 2-4.pdf",
+        "page": 12,
+        "as_cited": "Josephus",
+        "handout_sha256": "ba739be329262877669331f555802e9ad292e065454c0d8b36834f9ff85dfddb"
+      }
+    ],
+    "Horatio B. Hackett": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_06/handouts/Handout week 6 - Acts 2-4.pdf",
+        "page": 1,
+        "as_cited": "Hackett",
+        "handout_sha256": "ba739be329262877669331f555802e9ad292e065454c0d8b36834f9ff85dfddb"
+      }
+    ],
+    "B. W. Johnson": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_06/handouts/Handout week 6 - Acts 2-4.pdf",
+        "page": 1,
+        "as_cited": "Johnson's Notes",
+        "handout_sha256": "ba739be329262877669331f555802e9ad292e065454c0d8b36834f9ff85dfddb"
+      }
+    ],
+    "Arthur W. Pink": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_08/handouts/Handout week 8 - Acts 6-8.pdf",
+        "page": 9,
+        "as_cited": "Arthur W. Pink",
+        "handout_sha256": "4b37bc57cd65382ce660acc0ae61a1438eb897c885de73231e2803af4721bc96"
+      }
+    ],
+    "Alan Shelby": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_10/handouts/Handout week 10 - Acts 12-14.pdf",
+        "page": 6,
+        "as_cited": "Alan Shelby",
+        "handout_sha256": "57b09858a7e21f25ec3edd73de03fcc75d669c9163864bfc0fa6842fc175e4d7"
+      }
+    ],
+    "Matthew Henry": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_12/handouts/Handout week 12 - Acts 17-19.pdf",
+        "page": 5,
+        "as_cited": "Matthew Henry",
+        "handout_sha256": "ee90286b58d3330e36417f7a4db89cf9b25fcdc7ab30f882a50406733d9bb830"
+      }
+    ],
+    "Henry Morris": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_01/handouts/lfbi bib sur 4 week 1 handout 010919.pdf",
+        "page": 6,
+        "as_cited": "Henry Morris",
+        "handout_sha256": "c8f239982722387668ca94b9d92244ab86b11372f486c9a11ff2102fc2cdc461"
+      }
+    ],
+    "Irving L. Jensen": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_01/handouts/lfbi bib sur 4 week 1 handout 010919.pdf",
+        "page": 6,
+        "as_cited": "Irving L. Jensen",
+        "handout_sha256": "c8f239982722387668ca94b9d92244ab86b11372f486c9a11ff2102fc2cdc461"
+      }
+    ],
+    "James Montgomery Boice": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_01/handouts/lfbi bib sur 4 week 1 handout 010919.pdf",
+        "page": 6,
+        "as_cited": "James Montgomery Boice",
+        "handout_sha256": "c8f239982722387668ca94b9d92244ab86b11372f486c9a11ff2102fc2cdc461"
+      }
+    ],
+    "John G. Butler": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_01/handouts/lfbi bib sur 4 week 1 handout 010919.pdf",
+        "page": 6,
+        "as_cited": "John G. Butler",
+        "handout_sha256": "c8f239982722387668ca94b9d92244ab86b11372f486c9a11ff2102fc2cdc461"
+      }
+    ],
+    "David Rohl": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_01/handouts/lfbi bib sur 4 week 1 handout 010919.pdf",
+        "page": 6,
+        "as_cited": "David Rohl",
+        "handout_sha256": "c8f239982722387668ca94b9d92244ab86b11372f486c9a11ff2102fc2cdc461"
+      }
+    ],
+    "W. H. Griffith Thomas": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 2,
+        "as_cited": "W.H. Griffith Thomas",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "Ada Habershon": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 2,
+        "as_cited": "Habershon",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "John Ritchie": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 2,
+        "as_cited": "John Ritchie",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "James Philip": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 5,
+        "as_cited": "James Philip",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "John Maxwell": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 5,
+        "as_cited": "John Maxwell",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "Charles Swindoll": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_02/handouts/lfbi bib sur 4 week 2 handout 011619.pdf",
+        "page": 5,
+        "as_cited": "Charles Swindoll",
+        "handout_sha256": "8a9c1102f6d8e18394672b648595d9bbe411b0277f94eae8d8403e21214169cd"
+      }
+    ],
+    "Kevin Conner": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_03/handouts/lfbi bib sur 4 week 3 handout 012319.pdf",
+        "page": 2,
+        "as_cited": "Kevin Conner",
+        "handout_sha256": "7b14572979f5c9e73f21e25d1a0ada92b8b83ca34b5ee6c50e59c07a278fceb7"
+      }
+    ],
+    "Gene Getz": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_03/handouts/lfbi bib sur 4 week 3 handout 012319.pdf",
+        "page": 4,
+        "as_cited": "Gene Getz",
+        "handout_sha256": "7b14572979f5c9e73f21e25d1a0ada92b8b83ca34b5ee6c50e59c07a278fceb7"
+      }
+    ],
+    "Francis Schaeffer": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Bible_Survey_4/Week_03/handouts/lfbi bib sur 4 week 3 handout 012319.pdf",
+        "page": 4,
+        "as_cited": "Francis Schaeffer",
+        "handout_sha256": "7b14572979f5c9e73f21e25d1a0ada92b8b83ca34b5ee6c50e59c07a278fceb7"
+      }
+    ],
+    "Papias": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 4,
+        "as_cited": "Papias",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Clement of Rome": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 4,
+        "as_cited": "Clement of Rome",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Ignatius of Antioch": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 4,
+        "as_cited": "Ignatius",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Cyprian": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 5,
+        "as_cited": "Cyprian",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Epictetus": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 5,
+        "as_cited": "Epictetus",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Origen": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 9,
+        "as_cited": "Origen",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Eusebius of Caesarea": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 9,
+        "as_cited": "Eusebius",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Pamphilus of Caesarea": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 9,
+        "as_cited": "Pamphilus",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Augustine of Hippo": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 12,
+        "as_cited": "Augustine",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Jerome": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 12,
+        "as_cited": "Jerome",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Theodore of Mopsuestia": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 14,
+        "as_cited": "Theodore",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Bede": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 18,
+        "as_cited": "Venerable Bede",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Desiderius Erasmus": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 22,
+        "as_cited": "Desiderius Erasmus",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "John Calvin": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 23,
+        "as_cited": "John Calvin",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Martin Luther": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 23,
+        "as_cited": "Luther",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Pierre Olivetan": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 23,
+        "as_cited": "Pierre Olivetan",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Huldreich Zwingli": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 23,
+        "as_cited": "Huldreich Zwingli",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Jonathan Edwards": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 28,
+        "as_cited": "Jonathan Edwards",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Charles Darwin": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 28,
+        "as_cited": "Charles Darwin",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Samuel Tregelles": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 29,
+        "as_cited": "Samuel Tregelles",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Constantine Tischendorf": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 29,
+        "as_cited": "Constantine Tischendorf",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Brooke Foss Westcott": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 29,
+        "as_cited": "Brooke Foss Westcott",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Fenton John Anthony Hort": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 29,
+        "as_cited": "Fenton John Anthony Hort",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "John William Burgon": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 30,
+        "as_cited": "John William Burgon",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Herman Hoskier": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 30,
+        "as_cited": "Herman Hoskier",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Robert Dick Wilson": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 30,
+        "as_cited": "Robert Dick Wilson",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "J. M. Carroll": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Week_02/handouts/Church History Principles.pdf",
+        "page": 101,
+        "as_cited": "J.M. Carroll",
+        "handout_sha256": "986847bfd9e2ca7b11c25e86f16bc4d90474721d9c8bc68e80df9cf30a2c79fc"
+      }
+    ],
+    "Sue Bohlin": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_02/handouts/Genesis Handout - Week 2.pdf",
+        "page": 2,
+        "as_cited": "Sue Bohlin",
+        "handout_sha256": "e5dfb9bd29db19dac22deecc69fdd045c44abe8594ca766a9bb8284e14a12319"
+      }
+    ],
+    "James W. Sire": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_02/handouts/Genesis Handout - Week 2.pdf",
+        "page": 2,
+        "as_cited": "James W. Sire",
+        "handout_sha256": "e5dfb9bd29db19dac22deecc69fdd045c44abe8594ca766a9bb8284e14a12319"
+      }
+    ],
+    "E. W. Bullinger": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Bullinger, E.W.",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "G. H. Pember": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "G.H. Pember",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "M. R. DeHaan": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "M.R. DeHaan",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "C. H. Mackintosh": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "C.H. McIntosh",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Franz Delitzsch": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "F. Delitzsch",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Arno C. Gaebelein": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "A.C. Gaebelein",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Donald Barnhouse": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Donald Barnhouse",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Merrill F. Unger": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Merril F. Unger",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Philo of Alexandria": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Philo of Alexandria",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Justin Martyr": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Justin Martyr",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Athenagoras": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Athenagoras",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Tertullian": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Tertullian",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "Lactantius": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Genesis/Week_06/handouts/Genesis Handout - Week 6.pdf",
+        "page": 15,
+        "as_cited": "Lactantius",
+        "handout_sha256": "234c59d05b36eb49d4c42c223e28737b5aa9e4e58080ee7f50bb90032d76b550"
+      }
+    ],
+    "William L. Lane": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_03/handouts/Hebrews Lesson 3 Handout.pdf",
+        "page": 3,
+        "as_cited": "William L. Lane",
+        "handout_sha256": "46e7422f3e6f99b1db02a91072ba0a466c72373a54ad756751f4af69d940e059"
+      }
+    ],
+    "John MacArthur": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_04/handouts/Hebews Lesson 4 Handout.pdf",
+        "page": 5,
+        "as_cited": "John MacArthur",
+        "handout_sha256": "7b8020c93ed6577e1f5969a469e9931c6edeffeb8cc706e2ab949d8c272b69fc"
+      }
+    ],
+    "G. K. Chesterton": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_07/handouts/Hebrews Lesson 7 Handout.pdf",
+        "page": 9,
+        "as_cited": "G. K. Chesterton",
+        "handout_sha256": "90b6070622f671ffee39e2d2bde69c8e07a6ea266168ded602376ded8059f014"
+      }
+    ],
+    "C. S. Lewis": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_15/handouts/Hebrews Lesson 15 Handout part 2.pdf",
+        "page": 9,
+        "as_cited": "CS Lewis",
+        "handout_sha256": "b525e8cad7705e364780410d5f67a2136130b27e4ac9a622b7c4b24067e60749"
+      }
+    ],
+    "Helmut Koester": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_02_2_Timothy/handouts/2TimothyTeacherNotes.pdf",
+        "page": 2,
+        "as_cited": "Helmut Koester",
+        "handout_sha256": "9991e6697e5bbb2c172c31d4975505c37632efeeda0ec59237897ba504d9c86e"
+      }
+    ],
+    "Polycarp": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_02_2_Timothy/handouts/2TimothyTeacherNotes.pdf",
+        "page": 2,
+        "as_cited": "Polycarp",
+        "handout_sha256": "9991e6697e5bbb2c172c31d4975505c37632efeeda0ec59237897ba504d9c86e"
+      }
+    ],
+    "Harold Willmington": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_02_2_Timothy/handouts/2TimothyTeacherNotes.pdf",
+        "page": 17,
+        "as_cited": "Harold Willmington",
+        "handout_sha256": "9991e6697e5bbb2c172c31d4975505c37632efeeda0ec59237897ba504d9c86e"
+      }
+    ],
+    "Walter Chantry": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_12_2_John/handouts/2JohnTeacherNotes.pdf",
+        "page": 8,
+        "as_cited": "Walter Chantry",
+        "handout_sha256": "f3009cb88e99fbb5fd987b96e2a7c8f312e06ccf8b16108ec415ec5ffc03fb4a"
+      }
+    ],
+    "Greg Axe": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_15_Revelation/handouts/RevelationTeacherNotes.pdf",
+        "page": 26,
+        "as_cited": "Greg Axe",
+        "handout_sha256": "387480e13ff276f26f25c7bc8da86c6f544703830331f7ed107e7e961e859bc6"
+      }
+    ],
+    "J. Dwight Pentecost": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_15_Revelation/handouts/RevelationTeacherNotes.pdf",
+        "page": 26,
+        "as_cited": "J. Dwight Pentecost",
+        "handout_sha256": "387480e13ff276f26f25c7bc8da86c6f544703830331f7ed107e7e961e859bc6"
+      }
+    ],
+    "John F. Walvoord": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_15_Revelation/handouts/RevelationTeacherNotes.pdf",
+        "page": 26,
+        "as_cited": "Walvoord",
+        "handout_sha256": "387480e13ff276f26f25c7bc8da86c6f544703830331f7ed107e7e961e859bc6"
+      }
+    ],
+    "Henrietta C. Mears": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_16_New_Testament_Review/handouts/Week16NTReviewStudentHandout.pdf",
+        "page": 4,
+        "as_cited": "Henrietta C. Mears",
+        "handout_sha256": "9b82aca04bf65b5e79bd47bebb35bdc5feb9872ff4801b15ea166afe8638f832"
+      }
+    ],
+    "R. A. Torrey": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_16_New_Testament_Review/handouts/Week16NTReviewStudentHandout.pdf",
+        "page": 4,
+        "as_cited": "R.A. Torrey",
+        "handout_sha256": "9b82aca04bf65b5e79bd47bebb35bdc5feb9872ff4801b15ea166afe8638f832"
+      }
+    ],
+    "James Strong": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_16_New_Testament_Review/handouts/Week16NTReviewStudentHandout.pdf",
+        "page": 4,
+        "as_cited": "James Strong",
+        "handout_sha256": "9b82aca04bf65b5e79bd47bebb35bdc5feb9872ff4801b15ea166afe8638f832"
+      }
+    ],
+    "Robert Young": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_16_New_Testament_Review/handouts/Week16NTReviewStudentHandout.pdf",
+        "page": 4,
+        "as_cited": "Young’s",
+        "handout_sha256": "9b82aca04bf65b5e79bd47bebb35bdc5feb9872ff4801b15ea166afe8638f832"
+      }
+    ],
+    "Alexander Cruden": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_16_New_Testament_Review/handouts/Week16NTReviewStudentHandout.pdf",
+        "page": 4,
+        "as_cited": "Cruden’s",
+        "handout_sha256": "9b82aca04bf65b5e79bd47bebb35bdc5feb9872ff4801b15ea166afe8638f832"
+      }
+    ],
+    "Homer C. House": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_To_Homiletics_-_2022/Week_06/handouts/Week 6 HO.pdf",
+        "page": 64,
+        "as_cited": "Homer C. House",
+        "handout_sha256": "faf7d61940a89c8f924f0d2d47061ed573dd4a4b8af356f815ab62debd837f2c"
+      }
+    ],
+    "Susan Emolyn Harman": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_To_Homiletics_-_2022/Week_06/handouts/Week 6 HO.pdf",
+        "page": 64,
+        "as_cited": "Susan Emolyn Harman",
+        "handout_sha256": "faf7d61940a89c8f924f0d2d47061ed573dd4a4b8af356f815ab62debd837f2c"
+      }
+    ],
+    "Jay Edward Adams": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_01/handouts/LFBI Intro to Biblical Counseling - week 1.pdf",
+        "page": 4,
+        "as_cited": "Jay Edward Adams",
+        "handout_sha256": "8ff5316f3f5024ae1eeb5530651b5a1b64dd92ec3892162f1ac05ae90e833d4b"
+      }
+    ],
+    "Tim Stafford": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 4,
+        "as_cited": "Tim Stafford",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Edward E. Hindson": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 4,
+        "as_cited": "Edward E. Hindson",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Howard Eyrich": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 4,
+        "as_cited": "Howard Eyrich",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Harold I. Kaplan": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 4,
+        "as_cited": "Kaplan and Sadock",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Benjamin J. Sadock": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 4,
+        "as_cited": "Kaplan and Sadock",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Thomas Szasz": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 5,
+        "as_cited": "Thomas Szasz",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "William Glasser": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 5,
+        "as_cited": "William Glasser",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "E. Fuller Torrey": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 5,
+        "as_cited": "Fuller Torrey",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Ed Bulkley": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 5,
+        "as_cited": "Ed Bulkley",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Gary R. Collins": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 5,
+        "as_cited": "Gary R. Collins",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Wayne E. Oates": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 6,
+        "as_cited": "Wayne E. Oates",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Heinrich Meng": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 6,
+        "as_cited": "Heinrich Meng",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Ernst Freud": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 6,
+        "as_cited": "Ernst Freud",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Sigmund Freud": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_02/handouts/LFBI Intro to Biblical Counseling - week 2.pdf",
+        "page": 6,
+        "as_cited": "Freud’s Moses",
+        "handout_sha256": "cdce8bf2c65095d8b5b47799f193889cfeb8afe51e6c9189ebc1bae6ab66568b"
+      }
+    ],
+    "Kelly Brogan": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_13/handouts/LFBI – Intro to Biblical Counseling - week 13.pdf",
+        "page": 1,
+        "as_cited": "Kelly Brogan",
+        "handout_sha256": "2cd10d835b2d66d620533a05758d89e0cb66a5fb368472823a9abe7265309499"
+      }
+    ],
+    "William Hines": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Introduction_to_Biblical_Counseling_-_Fall_2020/Week_14/handouts/LFBI Intro to Biblical Counseling - week 14.pdf",
+        "page": 6,
+        "as_cited": "William Hines",
+        "handout_sha256": "9a4321a7e0894f1bc5d8abcf78a37a831092a49008a2f2833ad73557d2face4d"
+      }
+    ],
+    "Irenaeus": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Intro_to_New_Testament_2_-_Spring_2024/Week_02_2_Timothy/handouts/2TimothyTeacherNotes.pdf",
+        "page": 2,
+        "as_cited": "Irenaeus",
+        "handout_sha256": "9991e6697e5bbb2c172c31d4975505c37632efeeda0ec59237897ba504d9c86e"
+      }
+    ],
+    "F. F. Bruce": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_03/handouts/Hebrews Lesson 3 Handout.pdf",
+        "page": 2,
+        "as_cited": "F. F. Bruce",
+        "handout_sha256": "46e7422f3e6f99b1db02a91072ba0a466c72373a54ad756751f4af69d940e059"
+      }
+    ],
+    "Grant Osborne": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_04/handouts/Hebews Lesson 4 Handout.pdf",
+        "page": 4,
+        "as_cited": "Grant Osborne",
+        "handout_sha256": "7b8020c93ed6577e1f5969a469e9931c6edeffeb8cc706e2ab949d8c272b69fc"
+      }
+    ],
+    "Charles Ryrie": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_06/handouts/Hebrew Lesson 6 Handout.pdf",
+        "page": 6,
+        "as_cited": "Charles Ryrie",
+        "handout_sha256": "fad14e9021bc5f5bf6075d0f2e0f95c40d61886c78e2ed9917cdc9f5ba48d45e"
+      }
+    ],
+    "George Wald": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Apologetics_-_Fall_2023/Week_06/handouts/Apologetics - Student Notes - Week 6.pdf",
+        "page": 7,
+        "as_cited": "George Wald",
+        "handout_sha256": "62c802d2a41677ec174f67d1da4636cffb65c37c3a6cc9fda5a142e53b69fc78"
+      }
+    ],
+    "William Tyndale": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 25,
+        "as_cited": "William Tyndale",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Albert Barnes": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
+        "page": 5,
+        "as_cited": "Barnes Commentary",
+        "handout_sha256": "2de5d3a1eee1a5deec966e964c0aa0f1d82e8e347f063193c18976637d380971"
+      }
+    ],
+    "John J. Owen": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_01_Intro/handouts/Handout week 1.pdf",
+        "page": 2,
+        "as_cited": "John J. Owen",
+        "handout_sha256": "ef70bb1ab7522354233e47f1fe52c3a14412168a2086fecb58ab632bd91c5a8a"
+      }
+    ],
+    "John Wycliffe": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+        "page": 22,
+        "as_cited": "John Wycliffe",
+        "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+      }
+    ],
+    "Chris Best": [
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_03_Acts_18-Acts_2/handouts/Handout week 3 - Acts 2.pdf",
+        "page": 1,
+        "handout_sha256": "25faae6499d5d505852fda0d968d2c5693175bad9b2bce010eaebf740b313707",
+        "as_cited": "Dr. Best",
+        "identification": "User confirmed Dr. Chris Best, M.D., associate pastor at Midtown Baptist Temple."
+      }
+    ]
+  },
+  "unresolved_handout_citations": {
+    "C. Smith": {
+      "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
+      "page": 8,
+      "suggested_identity": "Chuck Smith",
+      "instructor": "Pastor Sam Miles",
+      "syllabus": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Course_Materials/additional_materials/2019 LFBI Acts Syllabus.pdf",
+      "parallel_text": "https://alexantal777.org/Sermons/ChuckMissler/all/Acts/Acts_Notes.pdf",
+      "note": "Handout credits C. Smith. The paragraph also appears in Chuck Missler’s Acts notes. Original authorship unresolved."
+    }
+  }
+}

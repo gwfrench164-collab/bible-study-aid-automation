@@ -259,6 +259,10 @@ fi
 
 echo "" | tee -a "$LOG_FILE"
 
+if [ -f "$AUTOMATION_DIR/web_discovery/update_discovery.py" ]; then
+    run_stage "Web source discovery" "$PYTHON_BIN" "$AUTOMATION_DIR/web_discovery/update_discovery.py"
+fi
+
 if [ "$FAILURES" -ne 0 ]; then
     echo "Update completed with $FAILURES failed stages; review this log." | tee -a "$LOG_FILE"
     osascript -e 'display notification "Bible Study Aid update has errors. See the latest log." with title "Bible Study Aid"' || true
