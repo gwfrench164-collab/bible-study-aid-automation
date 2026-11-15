@@ -584,12 +584,7 @@ def resolve_result_path(stored_path: str) -> Path:
     return candidate
 
 def build_highlight_pattern(query: str):
-    terms = []
-    for raw_term in re.split(r"\s+", query or ""):
-        term = raw_term.strip()
-        if len(term) >= 2:
-            terms.append(term)
-
+    terms = qbs.focus_words(query)
     terms.extend(qbs.get_topic_expansion_terms(query))
     query_reference = qbs.extract_query_reference(query)
     if query_reference:
@@ -603,7 +598,7 @@ def build_highlight_pattern(query: str):
     if not pattern:
         return None
 
-    return re.compile(f"({pattern})", re.IGNORECASE)
+    return re.compile(rf"(?<!\w)({pattern})(?!\w)", re.IGNORECASE)
 
 
 def highlight_text(text: str, pattern):

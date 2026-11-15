@@ -170,6 +170,44 @@ def normalize_query_tokens(query: str):
     return [t for t in tokenize(query) if t not in STOP_WORDS and len(t) > 1]
 
 
+def focus_words(query):
+    """Drop common question framing while keeping meaningful verbs in short searches."""
+    words = normalize_query_tokens(query)
+    if re.match(r"^(what|how|why|who|where|when|does|do|can|should)\b", query.strip(), re.I):
+        framing = {"how", "why", "who", "can", "do", "we", "us", "is", "are", "in",
+                   "of", "to", "on", "an", "say", "says", "teach", "teaches", "tell",
+                   "me", "bible", "scripture"}
+        focused = [word for word in words if word not in framing]
+        if focused:
+            return list(dict.fromkeys(focused))
+    return list(dict.fromkeys(words))
+
+
+def passage_focus(text, words):
+    """Prefer distinct terms occurring together within a readable excerpt."""
+    if not words:
+        return 0, None
+    pattern = r"\b(?:" + "|".join(map(re.escape, words)) + r")\b"
+    hits = list(re.finditer(pattern, text, re.I))
+    counts = {}
+    left = 0
+    best_score, position = 0, None
+    for hit in hits:
+        word = hit.group().lower()
+        counts[word] = counts.get(word, 0) + 1
+        while hit.start() - hits[left].start() > 200 or counts[hits[left].group().lower()] > 1:
+            first = hits[left].group().lower()
+            counts[first] -= 1
+            if not counts[first]:
+                del counts[first]
+            left += 1
+        span = hit.start() - hits[left].start()
+        score = 120 * len(counts) + (max(0, 80 - span // 3) if len(counts) > 1 else 0)
+        if score > best_score:
+            best_score, position = score, hits[left].start()
+    return best_score, position
+
+
 def get_topic_expansion_terms(query: str):
     q = query.strip().lower()
     terms = []
@@ -237,7 +275,7 @@ def make_fts_query(query: str, query_tokens, topic_terms, search_mode: str = "ba
         phrases.append(fts_phrase(query))
 
     for token in query_tokens:
-        phrases.append(token)
+        phrases.append(fts_phrase(token))
 
     for term in topic_terms:
         if " " in term:
@@ -274,6 +312,10 @@ def build_snippet(text: str, query: str, topic_terms=None, query_reference=None)
         if pos != -1 and (best_pos is None or pos < best_pos):
             best_pos = pos
 
+    if not query_reference and query.lower() not in lower_text:
+        _, focus = passage_focus(text, focus_words(query))
+        if focus is not None:
+            best_pos = focus
     if best_pos is None:
         snippet = text[:350].replace("\n", " ").strip()
         return snippet
@@ -306,9 +348,10 @@ def read_passage(path, chunk_id):
 
 
 def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced"):
-    query_tokens = normalize_query_tokens(query)
+    query_tokens = focus_words(query) if search_mode == "balanced" else normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     topic_terms = get_topic_expansion_terms(query)
+    books = [book.lower() for book in BOOK_PATTERNS if re.search(r"\b" + re.escape(book) + r"\b", query, re.I)]
     topic_rules = get_topic_anchor_rules(query) or {}
     selected_source_types = []
     for source_type in source_types or []:
@@ -437,6 +480,11 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                 if minimum_topic_matches is not None and topic_match_count < minimum_topic_matches:
                     bonus -= 80
 
+                if search_mode == "balanced" and not query_reference and len(query_tokens) > 1:
+                    proximity, _ = passage_focus(text, query_tokens)
+                    bonus += proximity
+                    if any(book in lower_path or book in row["title"].lower() for book in books):
+                        bonus += 200
                 rank_value = row["rank"] if row["rank"] is not None else 0.0
                 score = int(500 - rank_value * 100 + bonus)
 
