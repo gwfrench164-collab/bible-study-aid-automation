@@ -41,11 +41,7 @@ def fetch(names, after=None):
     params = {"q": f"mediatype:texts AND ({creators})", "sort[]": "addeddate desc", "fl[]": ["identifier","title","date","creator"], "rows": 25, "output":"json"}
     if after is not None:
         params.update({"sort[]":"identifier asc","rows":50})
-        if after:
-            import re
-            if not re.fullmatch(r"[A-Za-z0-9_.-]+",after):
-                raise ValueError("Invalid archive identifier")
-            params["q"] += f' AND identifier:{{"{after}" TO *]'
+        params["page"] = int(after or 1)
     url = "https://archive.org/advancedsearch.php?" + urlencode(params, doseq=True)
     req = Request(url, headers={"User-Agent":"BibleStudyAid/1.0 (personal catalog discovery)"})
     with urlopen(req, timeout=20) as response:
@@ -79,9 +75,10 @@ def _refresh_locked(folder, authors, lookup):
             if lookup is fetch:
                 cursors = state.setdefault("backfill",{})
                 if author not in cursors or cursors[author] is not None:
-                    older = fetch(aliases,cursors.get(author,""))
+                    page = cursors.get(author,1)
+                    older = fetch(aliases,page)
                     items = items + older
-                    cursors[author] = older[-1]["identifier"] if len(older)==50 else None
+                    cursors[author] = page+1 if len(older)==50 else None
             for item in items:
                 key = item["identifier"]
                 previous = state["records"].get(key,{})
