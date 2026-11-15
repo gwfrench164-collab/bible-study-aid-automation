@@ -163,4 +163,41 @@ def run():
         status=prior.get(str(n),{}).get("status","Awaiting collection" if r["eligible"] else "Catalog only")
         flag=" · LFBI handout title" if n in CITED else ""
         rows.append(f'<li>{html.escape(r["author"])} · <a href="https://www.gutenberg.org/ebooks/{n}">{html.escape(r["title"])}</a> · {html.escape(status)}{flag}</li>')
+    with sqlite3.connect(importer.DB_PATH.as_uri()+"?mode=ro",uri=True) as reader:
+        library_paths=[row[0] for row in reader.execute("SELECT rel_path FROM documents")]
+    handout_report(folder,records,library_paths,registry)
     atomic_write_text(folder/"Gutenberg resources.html","\n".join(rows)+"</ul>")
+
+def handout_report(folder, records, library_paths, registry):
+    from urllib.parse import quote
+    esc=html.escape
+    watch=json.loads((folder/"handout_titles.json").read_text())
+    archive=json.loads((folder/"catalog.json").read_text()).get("records",{})
+    paths=[(norm(Path(p).stem),p) for p in library_paths]
+    rows=['<!doctype html><meta charset="utf-8"><title>Handout title matches</title><h1>Handout title matches</h1><p>Titles drawn from LFBI pages. Local filenames and catalog search hits are possible matches pending edition review.</p>']
+    for item in watch:
+        author,title=item["author"],item["title"]
+        needle=norm(title)
+        page=Path(item["file"]).as_uri()+"#page="+str(item["page"])
+        rows.append(f'<h2>{esc(title)}</h2><p>{esc(author)} · <a href="{esc(page)}">{esc(Path(item["file"]).name)}, p. {item["page"]}</a></p><ul>')
+        links={}
+        for work in registry["works"]:
+            if work["author"]==author and (needle in norm(work["title"]+" "+work["edition"]) or title=="The Book of Acts" and work["title"]=="Acts"):
+                links[work["url"]]=work["title"]
+        for number,rec in records.items():
+            if rec["author"]==author and (needle in norm(rec["title"]) or number in CITED and CITED[number]==(author,item["page"]) and title!="The Revision Revised"):
+                links[f"https://www.gutenberg.org/ebooks/{number}"]=rec["title"]
+        for key,rec in archive.items():
+            if needle in norm(str(rec["title"])) and author in rec.get("matched_authors",[rec["search_author"]]):
+                links["https://archive.org/details/"+quote(key,safe="")]=str(rec["title"])
+        for url,label in links.items():
+            rows.append(f'<li><a href="{esc(url)}">{esc(label)}</a></li>')
+        local=[p for stem,p in paths if needle in stem]
+        for p in local:
+            path=Path(p)
+            if not path.is_absolute():path=BASE/path
+            rows.append(f'<li>Local · <a href="{esc(path.as_uri())}">{esc(path.name)}</a></li>')
+        if not links and not local:
+            rows.append('<li>No title match yet</li>')
+        rows.append('</ul>')
+    atomic_write_text(folder/"Handout title matches.html","\n".join(rows))

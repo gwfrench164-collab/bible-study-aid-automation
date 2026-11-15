@@ -36,9 +36,16 @@ def link_passages(db, data):
             db.execute("INSERT INTO chunk_refs(chunk_id,scripture_ref) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM chunk_refs WHERE chunk_id=? AND scripture_ref=?)", key + key)
 
 
-def fetch(names):
+def fetch(names, after=None):
     creators = " OR ".join(f'creator:"{name}"' for name in names)
     params = {"q": f"mediatype:texts AND ({creators})", "sort[]": "addeddate desc", "fl[]": ["identifier","title","date","creator"], "rows": 25, "output":"json"}
+    if after is not None:
+        params.update({"sort[]":"identifier asc","rows":50})
+        if after:
+            import re
+            if not re.fullmatch(r"[A-Za-z0-9_.-]+",after):
+                raise ValueError("Invalid archive identifier")
+            params["q"] += f' AND identifier:{{"{after}" TO *]'
     url = "https://archive.org/advancedsearch.php?" + urlencode(params, doseq=True)
     req = Request(url, headers={"User-Agent":"BibleStudyAid/1.0 (personal catalog discovery)"})
     with urlopen(req, timeout=20) as response:
@@ -69,6 +76,12 @@ def _refresh_locked(folder, authors, lookup):
         aliases = AUTHORS.get(author,[author] + ([parts[1]+", "+parts[0]] if len(parts)==2 else []))
         try:
             items = lookup(aliases)
+            if lookup is fetch:
+                cursors = state.setdefault("backfill",{})
+                if author not in cursors or cursors[author] is not None:
+                    older = fetch(aliases,cursors.get(author,""))
+                    items = items + older
+                    cursors[author] = older[-1]["identifier"] if len(older)==50 else None
             for item in items:
                 key = item["identifier"]
                 previous = state["records"].get(key,{})
@@ -86,7 +99,7 @@ def _refresh_locked(folder, authors, lookup):
     esc = html.escape
     rows = ['<!doctype html><meta charset="utf-8"><title>Catalog review</title><h1>Catalog review</h1>',
             f'<p>{sum(a in checked for a in authors)} of {len(authors)} authors checked · {len(state["records"])} catalog records · {day}</p>',
-            '<p>Up to six author searches per day. Each search checks the 25 newest Internet Archive text listings. Review local holdings, identity and edition rights before collection.</p>']
+            '<p>Up to six author searches per day. Checks the 25 newest listings and up to 50 additional records per author while working through the back catalog. Review local holdings, identity and edition rights before collection.</p>']
     def row(key):
         item = state["records"][key]
         names = ", ".join(item.get("matched_authors",[item["search_author"]]))

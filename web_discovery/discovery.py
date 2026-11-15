@@ -61,7 +61,7 @@ def report(data, documents):
         rows.append('</section>')
     return """<!doctype html><meta charset="utf-8"><title>Bible Study Aid · Web sources</title>
 <style>body{font:17px system-ui;max-width:58rem;margin:3rem auto;padding:0 1rem;color:#272922}section{padding:1rem 0;border-top:1px solid #ccc}a{color:#185346}li{overflow-wrap:anywhere}</style>
-<h1>Web source discovery</h1><p><a href="Catalog review.html">Review catalog discoveries</a> · <a href="Gutenberg resources.html">Gutenberg resources</a> · <a href="LFBI Handout Authors.html">LFBI handout author references</a></p><p>Search an author’s catalogs, check local matches, and record the exact edition and its permissions in registry.json.</p>""" + "\n".join(rows)
+<h1>Web source discovery</h1><p><a href="Catalog review.html">Review catalog discoveries</a> · <a href="Gutenberg resources.html">Gutenberg resources</a> · <a href="Handout title matches.html">Handout title matches</a> · <a href="LFBI Handout Authors.html">LFBI handout author references</a></p><p>Search an author’s catalogs, check local matches, and record the exact edition and its permissions in registry.json.</p>""" + "\n".join(rows)
 
 
 def collect(work, source, db, reference):
