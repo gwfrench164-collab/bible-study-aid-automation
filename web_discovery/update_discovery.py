@@ -45,28 +45,62 @@ def fetch(names):
         return json.load(response)["response"]["docs"]
 
 
-def refresh(folder, lookup=fetch):
+def refresh(folder, lookup=fetch, authors=None):
+    import fcntl
+    authors = list(dict.fromkeys(load()["authors"] if authors is None else authors))
+    with (folder/"catalog.lock").open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _refresh_locked(folder, authors, lookup)
+
+
+def _refresh_locked(folder, authors, lookup):
     state_path = folder / "catalog.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else {"checked":0,"records":{}}
+    checked = state.setdefault("author_checks", {a:state["checked"] for a in AUTHORS if state["checked"]})
+    day = time.strftime("%Y-%m-%d")
+    if state.get("batch_day") != day:
+        state.update(batch_day=day, attempted=[], daily_changes=[])
     now = time.time()
-    if now - state["checked"] >= 7 * 86400:
-        changes = []
-        for author, names in AUTHORS.items():
-            for item in lookup(names):
+    due = sorted((a for a in authors if now-checked.get(a,0) >= 7*86400 and a not in state["attempted"]), key=lambda a:checked.get(a,0))
+    errors = state.setdefault("errors",{})
+    for author in due[:max(0,6-len(state["attempted"]))]:
+        state["attempted"].append(author)
+        parts = author.rsplit(" ",1)
+        aliases = AUTHORS.get(author,[author] + ([parts[1]+", "+parts[0]] if len(parts)==2 else []))
+        try:
+            items = lookup(aliases)
+            for item in items:
                 key = item["identifier"]
-                record = dict(item, search_author=author)
-                if state["records"].get(key) != record:
-                    changes.append(key)
-                    state["records"][key] = record
-        state.update(checked=now, changes=changes)
+                previous = state["records"].get(key,{})
+                matches = list(dict.fromkeys(previous.get("matched_authors",[previous.get("search_author",author)])+[author]))
+                record = dict(item, search_author=matches[0], matched_authors=matches)
+                if {k:v for k,v in previous.items() if k!="matched_authors"} != {k:v for k,v in record.items() if k!="matched_authors"} or author not in previous.get("matched_authors",[previous.get("search_author")]):
+                    if key not in state["daily_changes"]:
+                        state["daily_changes"].append(key)
+                state["records"][key]=record
+            checked[author]=now
+            errors.pop(author,None)
+        except (OSError,ValueError,KeyError) as exc:
+            errors[author]=str(exc)
         atomic_write_text(state_path,json.dumps(state,ensure_ascii=False,indent=2))
-        if changes:
-            print(f"{len(changes)} catalog records added or changed")
     esc = html.escape
-    rows = ['<!doctype html><meta charset="utf-8"><title>Catalog review</title><h1>Catalog review</h1><p>Internet Archive, 25 newest text records per author search. Check attribution, edition, local holdings and permissions before collection.</p>']
-    for key, record in sorted(state["records"].items(),key=lambda pair:(pair[1]["search_author"],str(pair[1]["title"]))):
-        label = " · New or changed at last check" if key in state['changes'] else ""
-        rows.append(f'<p>{esc(record["search_author"])} · <a href="https://archive.org/details/{quote(key,safe="")}">{esc(str(record["title"]))}</a> · {esc(str(record.get("date","Undated")))}{label}</p>')
+    rows = ['<!doctype html><meta charset="utf-8"><title>Catalog review</title><h1>Catalog review</h1>',
+            f'<p>{sum(a in checked for a in authors)} of {len(authors)} authors checked · {len(state["records"])} catalog records · {day}</p>',
+            '<p>Up to six author searches per day. Each search checks the 25 newest Internet Archive text listings. Review local holdings, identity and edition rights before collection.</p>']
+    def row(key):
+        item = state["records"][key]
+        names = ", ".join(item.get("matched_authors",[item["search_author"]]))
+        return f'<li>{esc(names)} · <a href="https://archive.org/details/{quote(key,safe="")}">{esc(str(item["title"]))}</a> · {esc(str(item.get("date","Undated")))}</li>'
+    rows.append('<h2>Added or changed today</h2><ul>')
+    rows.extend(row(key) for key in state["daily_changes"])
+    if not state["daily_changes"]:
+        rows.append('<li>No catalog changes recorded today.</li>')
+    rows.append('</ul>')
+    if errors:
+        rows.append('<p>Pending retry: '+esc(", ".join(sorted(errors)))+'</p>')
+    rows.append('<details><summary>All catalog records</summary><ul>')
+    rows.extend(row(key) for key in sorted(state["records"],key=lambda k:(state["records"][k]["search_author"],k)))
+    rows.append('</ul></details>')
     atomic_write_text(folder/"Catalog review.html","\n".join(rows))
 
 
@@ -80,4 +114,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--catalog-only"]:
+        refresh(HERE)
+    else:
+        main()

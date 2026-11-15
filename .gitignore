@@ -12,3 +12,4 @@ venv/
 .idea/
 lfbi_work/
 *.log
+/web_discovery/catalog.lock

@@ -205,6 +205,84 @@
       "rights_evidence": "",
       "discovered_on": "2026-11-14",
       "match_phrase": "dispensational truth"
+    },
+    {
+      "author": "J. Sidlow Baxter",
+      "title": "Explore the Book",
+      "url": "https://books.google.com/books?id=CFiwbIjokk8C",
+      "edition": "Zondervan, 1986, ISBN 9780310206200. The LFBI bibliography also cites Zondervan, 1966.",
+      "permission": "catalog only",
+      "rights_evidence": "https://books.google.com/books?id=CFiwbIjokk8C",
+      "discovered_on": "2026-11-14",
+      "handout_citations": [
+        {
+          "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+          "page": 12,
+          "as_cited": "Baxter",
+          "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+        }
+      ]
+    },
+    {
+      "author": "David Cloud",
+      "title": "Acts",
+      "url": "https://www.wayoflife.org/publications/samples/Acts-Sample.pdf",
+      "edition": "Advanced Bible Studies Series, third edition, September 2014, ISBN 1-58318-083-4. LFBI cites it as The Book of Acts.",
+      "permission": "publisher sample only",
+      "rights_evidence": "https://www.wayoflife.org/publications/samples/Acts-Sample.pdf",
+      "discovered_on": "2026-11-14",
+      "handout_citations": [
+        {
+          "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_16/handouts/Handout week 15 - Acts 27-28.pdf",
+          "page": 12,
+          "as_cited": "David Cloud",
+          "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+        }
+      ]
+    },
+    {
+      "author": "F. F. Bruce",
+      "title": "The Epistle to the Hebrews",
+      "url": "https://www.eerdmans.com/9780802875891/the-epistle-to-the-hebrews/",
+      "edition": "Eerdmans Classic Biblical Commentaries, ISBN 9780802875891. The handout does not specify an edition.",
+      "permission": "catalog only",
+      "rights_evidence": "https://www.eerdmans.com/9780802875891/the-epistle-to-the-hebrews/",
+      "discovered_on": "2026-11-14",
+      "handout_citations": [
+        {
+          "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Hebrews_BBL_400_-_Spring_2025/Week_03/handouts/Hebrews Lesson 3 Handout.pdf",
+          "page": 2,
+          "as_cited": "F. F. Bruce",
+          "handout_sha256": "46e7422f3e6f99b1db02a91072ba0a466c72373a54ad756751f4af69d940e059"
+        }
+      ]
+    },
+    {
+      "author": "Jonathan Edwards",
+      "title": "Selected Sermons of Jonathan Edwards",
+      "url": "https://www.gutenberg.org/ebooks/34632",
+      "edition": "Project Gutenberg #34632, edited by H. Norman Gardiner. Includes Sinners in the Hands of an Angry God.",
+      "permission": "public domain in USA",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/34632",
+      "discovered_on": "2026-11-14",
+      "handout_citations": [
+        {
+          "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Church_History_-_Fall_2024/Course_Materials/handouts/LFBI-Church History Handout.pdf",
+          "page": 28,
+          "as_cited": "Jonathan Edwards",
+          "handout_sha256": "9ecbc1c7de3d554568087f918ae2e460459289c7d3ca62d77e35dac09f4c5e3c"
+        }
+      ],
+      "download_url": "https://www.gutenberg.org/cache/epub/34632/pg34632.txt",
+      "sha256": "39f34350045b3d857222e9352a6075272236515ad77eb97769ae46e6fadf9bfa",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/39f34350045b3d857222e9352a6075272236515ad77eb97769ae46e6fadf9bfa/Jonathan Edwards - Selected Sermons of Jonathan Edwards.txt",
+      "passages": [
+        {
+          "reference": "Deuteronomy 32:35",
+          "anchor": "In this verse is threatened the vengeance of God on the wicked unbelieving",
+          "use": "Opening exposition in Sinners in the Hands of an Angry God"
+        }
+      ]
     }
   ],
   "directories": [
@@ -304,6 +382,17 @@
         "page": 12,
         "as_cited": "Chuck Missler",
         "handout_sha256": "dfbc707865d427f642c4cd3e0e090b9c322a5d3019ffe5a6366e8fd163206db1"
+      },
+      {
+        "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
+        "page": 8,
+        "instructor": "Pastor Sam Miles",
+        "syllabus": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Course_Materials/additional_materials/2019 LFBI Acts Syllabus.pdf",
+        "parallel_text": "https://alexantal777.org/Sermons/ChuckMissler/all/Acts/Acts_Notes.pdf",
+        "note": "Probable source: Chuck Missler. The wording matches his Acts notes. The handout prints C. Smith; the user also recalls Sam Miles frequently citing Missler.",
+        "as_cited": "C. Smith",
+        "attribution_status": "probable",
+        "handout_sha256": "2de5d3a1eee1a5deec966e964c0aa0f1d82e8e347f063193c18976637d380971"
       }
     ],
     "Trent C. Butler": [
@@ -1228,15 +1317,5 @@
       }
     ]
   },
-  "unresolved_handout_citations": {
-    "C. Smith": {
-      "file": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Week_02_Acts_1/handouts/Handout week 2 Acts 1.pdf",
-      "page": 8,
-      "suggested_identity": "Chuck Smith",
-      "instructor": "Pastor Sam Miles",
-      "syllabus": "/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/02_LFBI/Acts_-_Spring_2019/Course_Materials/additional_materials/2019 LFBI Acts Syllabus.pdf",
-      "parallel_text": "https://alexantal777.org/Sermons/ChuckMissler/all/Acts/Acts_Notes.pdf",
-      "note": "Handout credits C. Smith. The paragraph also appears in Chuck Missler’s Acts notes. Original authorship unresolved."
-    }
-  }
+  "unresolved_handout_citations": {}
 }
