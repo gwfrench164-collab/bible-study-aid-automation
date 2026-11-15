@@ -1,0 +1,72 @@
+{
+  "items": {
+    "26134": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "38326": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "45304": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "130": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "272": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "273": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "418": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "1549": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "1670": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "1719": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "25891": {
+      "status": "Already in library"
+    },
+    "34632": {
+      "status": "Already in library"
+    },
+    "65115": {
+      "status": "Possible local copy"
+    },
+    "66112": {
+      "status": "Possible local copy"
+    },
+    "70657": {
+      "status": "Possible local copy"
+    }
+  },
+  "day": "2026-11-14",
+  "attempted": [
+    26134,
+    38326,
+    45304,
+    130,
+    272,
+    273,
+    418,
+    1549,
+    1670,
+    1719
+  ]
+}

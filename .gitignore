@@ -13,3 +13,4 @@ venv/
 lfbi_work/
 *.log
 /web_discovery/catalog.lock
+/web_discovery/pg_catalog.csv

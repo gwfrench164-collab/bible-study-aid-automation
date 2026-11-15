@@ -115,6 +115,10 @@ def main():
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--catalog-only"]:
-        refresh(HERE)
+        from gutenberg_library import run
+        try:
+            refresh(HERE)
+        finally:
+            run()
     else:
         main()
