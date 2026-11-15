@@ -138,7 +138,11 @@
     "Albert Barnes",
     "John J. Owen",
     "John Wycliffe",
-    "Chris Best"
+    "Chris Best",
+    "R. B. Ouellette",
+    "Edward F. Hills",
+    "Kent Brandenburg",
+    "F. B. Meyer"
   ],
   "works": [
     {
@@ -283,6 +287,181 @@
           "use": "Opening exposition in Sinners in the Hands of an Angry God"
         }
       ]
+    },
+    {
+      "author": "Clarence Larkin",
+      "title": "The Book of Revelation",
+      "edition": "1919, Library of Congress, LCCN 19013838. Searchable OCR. Use the page images for charts and quotations.",
+      "url": "https://www.loc.gov/item/19013838/",
+      "permission": "public domain in USA",
+      "rights_evidence": "https://www.loc.gov/collections/selected-digitized-books/about-this-collection/rights-and-access/",
+      "download_url": "https://data.labs.loc.gov/digitized-books/data/19013838.txt",
+      "credit": "Library of Congress",
+      "match_phrase": "book of revelation",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/343ac08f0bbc9fcb5fb117394cc5df474aa0785a0f31f0a8c9fb49b2f47a2e2d/Clarence Larkin - The Book of Revelation.txt"
+    },
+    {
+      "author": "R. B. Ouellette",
+      "title": "A More Sure Word: Which Bible Can You Trust?",
+      "url": "https://strivingtogether.com/en-ca/products/a-more-sure-word",
+      "edition": "Striving Together Publications, 2008. Cited in the Summer 2024 LFBI Foundations 3 syllabus.",
+      "permission": "publisher catalog",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "topics": [
+        "Bible preservation"
+      ],
+      "course_source": "https://static1.squarespace.com/static/60690e58d867c646bbb295c2/t/65ce64f775433a45492d047a/1708025080171/Foundations3_Syllabus_Summer2024_Morgan.pdf"
+    },
+    {
+      "author": "Edward F. Hills",
+      "title": "The King James Version Defended",
+      "url": "https://uasvbible.org/wp-content/uploads/2021/12/THE-KING-JAMES-VERSION-DEFENDED-by-Edward-F.-Hills.pdf",
+      "edition": "Hills develops an argument from providential preservation. Online copy.",
+      "permission": "reading link; indexing permission unverified",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "topics": [
+        "Bible preservation"
+      ]
+    },
+    {
+      "author": "Kent Brandenburg",
+      "title": "Thou Shalt Keep Them: A Biblical Theology of the Perfect Preservation of Scripture",
+      "url": "https://kentbrandenburg.com/the-biography-of-the-authors/",
+      "edition": "2003. General editor and contributing author.",
+      "permission": "author bibliography",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "topics": [
+        "Bible preservation"
+      ]
+    },
+    {
+      "author": "David Cloud",
+      "title": "Psalm 12:7 and Bible Preservation",
+      "url": "https://www.wayoflife.org/reports/psalm_12_7_and_bible_preservation.php",
+      "edition": "Way of Life Literature, first published 1996, dated June 22, 2023.",
+      "permission": "free to read; indexing permission unverified",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "topics": [
+        "Bible preservation"
+      ]
+    },
+    {
+      "author": "William Carey",
+      "title": "To all those who encourage the Translation of the Sacred Scriptures into the Languages of Eastern Asia",
+      "url": "https://careycenter.wmcarey.edu/new/newjan2010.htm",
+      "edition": "Joint address by William Carey, Joshua Marshman, and William Ward, dated December 17, 1818. Listed by the Carey Center in a volume published in 1819.",
+      "permission": "collection record; indexing permission unverified",
+      "rights_evidence": "",
+      "discovered_on": "2026-11-14",
+      "coauthors": [
+        "Joshua Marshman",
+        "William Ward"
+      ],
+      "topics": [
+        "missions",
+        "Bible translation"
+      ]
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume I (Genesis to Deuteronomy)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc1/mhc1",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc1/cache/mhc1.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc1/cache/mhc1.txt",
+      "permission": "public domain in USA",
+      "sha256": "63ad5f200460b049488afc7b0e90dc87fa739f2f34ffbba75a4e5ef013cfe727",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/63ad5f200460b049488afc7b0e90dc87fa739f2f34ffbba75a4e5ef013cfe727/Matthew Henry - Commentary on the Whole Bible Volume I Genesis to Deuteronomy.txt"
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume II (Joshua to Esther)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc2/mhc2",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc2/cache/mhc2.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc2/cache/mhc2.txt",
+      "permission": "public domain in USA",
+      "sha256": "b53ca73cf69947ab4f815a54998811167d412253b4595340a057d5b87766acb7",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/b53ca73cf69947ab4f815a54998811167d412253b4595340a057d5b87766acb7/Matthew Henry - Commentary on the Whole Bible Volume II Joshua to Esther.txt"
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume III (Job to Song of Solomon)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc3/mhc3",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc3/cache/mhc3.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc3/cache/mhc3.txt",
+      "permission": "public domain in USA",
+      "sha256": "676a2f0b7bc8317639a54d0dced5fcaf087458357a1d8b6e934bcb9170da5eef",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/676a2f0b7bc8317639a54d0dced5fcaf087458357a1d8b6e934bcb9170da5eef/Matthew Henry - Commentary on the Whole Bible Volume III Job to Song of Solomon.txt"
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume IV (Isaiah to Malachi)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc4/mhc4",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc4/cache/mhc4.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc4/cache/mhc4.txt",
+      "permission": "public domain in USA",
+      "sha256": "c15670be62822c4d5678b5a5cf18d91061017d37a7233893e5b81ee2f6be9b2e",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/c15670be62822c4d5678b5a5cf18d91061017d37a7233893e5b81ee2f6be9b2e/Matthew Henry - Commentary on the Whole Bible Volume IV Isaiah to Malachi.txt"
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume V (Matthew to John)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc5/mhc5",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc5/cache/mhc5.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc5/cache/mhc5.txt",
+      "permission": "public domain in USA",
+      "sha256": "8b4c34ba8dc9abdafc5d15d711ace78b4e3ac86ceca4056c38cf4f4469ef3080",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/8b4c34ba8dc9abdafc5d15d711ace78b4e3ac86ceca4056c38cf4f4469ef3080/Matthew Henry - Commentary on the Whole Bible Volume V Matthew to John.txt"
+    },
+    {
+      "author": "Matthew Henry",
+      "title": "Commentary on the Whole Bible, Volume VI (Acts to Revelation)",
+      "edition": "CCEL unabridged text. Original publication 1706–1721.",
+      "url": "https://ccel.org/ccel/henry/mhc6/mhc6",
+      "rights_evidence": "https://ccel.org/ccel/h/henry/mhc6/cache/mhc6.txt",
+      "download_url": "https://ccel.org/ccel/h/henry/mhc6/cache/mhc6.txt",
+      "permission": "public domain in USA",
+      "sha256": "d6d0cdf15d3edbac8982e8c9b50e0c1dfaecc660af62b6d8e53d910516eb9fb7",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/d6d0cdf15d3edbac8982e8c9b50e0c1dfaecc660af62b6d8e53d910516eb9fb7/Matthew Henry - Commentary on the Whole Bible Volume VI Acts to Revelation.txt"
+    },
+    {
+      "author": "F. B. Meyer",
+      "title": "Love to the Uttermost: Expositions of John XIII–XXI",
+      "edition": "Project Gutenberg #22376. Frederick Brotherton Meyer.",
+      "url": "https://www.gutenberg.org/ebooks/22376",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/22376",
+      "download_url": "https://www.gutenberg.org/cache/epub/22376/pg22376.txt",
+      "permission": "public domain in USA",
+      "sha256": "fb8dbef45a975dc53bd7cbe807ee5fa7b2fec997497f8fab23ced6d5a552f67a",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/fb8dbef45a975dc53bd7cbe807ee5fa7b2fec997497f8fab23ced6d5a552f67a/F. B. Meyer - Love to the Uttermost Expositions of John XIIIXXI.txt"
+    },
+    {
+      "author": "F. B. Meyer",
+      "title": "John the Baptist",
+      "edition": "Project Gutenberg #25904. Frederick Brotherton Meyer.",
+      "url": "https://www.gutenberg.org/ebooks/25904",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/25904",
+      "download_url": "https://www.gutenberg.org/cache/epub/25904/pg25904.txt",
+      "permission": "public domain in USA",
+      "sha256": "94c89b1c8b55345241740e66778ab37e66e51a2d98eb4235ffeeef11086245a8",
+      "discovered_on": "2026-11-14",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/94c89b1c8b55345241740e66778ab37e66e51a2d98eb4235ffeeef11086245a8/F. B. Meyer - John the Baptist.txt"
     }
   ],
   "directories": [
