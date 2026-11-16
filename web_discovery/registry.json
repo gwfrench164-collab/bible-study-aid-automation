@@ -462,6 +462,30 @@
       "sha256": "94c89b1c8b55345241740e66778ab37e66e51a2d98eb4235ffeeef11086245a8",
       "discovered_on": "2026-11-14",
       "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/94c89b1c8b55345241740e66778ab37e66e51a2d98eb4235ffeeef11086245a8/F. B. Meyer - John the Baptist.txt"
+    },
+    {
+      "author": "William Carey",
+      "title": "An Enquiry into the Obligations of Christians to Use Means for the Conversion of the Heathens",
+      "edition": "Project Gutenberg ebook 11449. Section I discusses the continuing obligation of the Great Commission.",
+      "url": "https://www.gutenberg.org/ebooks/11449",
+      "rights_evidence": "https://www.gutenberg.org/ebooks/11449",
+      "permission": "public domain in USA",
+      "sha256": "7f6b57e43173550f74ac824cf22427ef3a65023b9ceffc24851321d80a1d5476",
+      "download_url": "https://www.gutenberg.org/cache/epub/11449/pg11449.txt",
+      "discovered_on": "2026-11-15",
+      "local_path": "/Users/george/Documents/Spiritual/Reference/Web Sources/7f6b57e43173550f74ac824cf22427ef3a65023b9ceffc24851321d80a1d5476/William Carey - An Enquiry into the Obligations of Christians to Use Means for the Conversion of the Heathens.txt",
+      "passages": [
+        {
+          "reference": "Matthew 28:19",
+          "anchor": "This commission was as extensive as possible",
+          "use": "Section I applies the commission to Christian missions."
+        },
+        {
+          "reference": "Mark 16:15",
+          "anchor": "This commission was as extensive as possible",
+          "use": "Section I applies the commission to Christian missions."
+        }
+      ]
     }
   ],
   "directories": [
