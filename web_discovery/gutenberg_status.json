@@ -1,44 +1,34 @@
 {
   "items": {
     "26134": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "38326": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "45304": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "130": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "272": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "273": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "418": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "1549": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "1670": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "1719": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "25891": {
       "status": "Already in library"
@@ -54,19 +44,59 @@
     },
     "70657": {
       "status": "Possible local copy"
+    },
+    "1722": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "3296": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "5265": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "9371": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "9912": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "16769": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "20245": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "20379": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "21112": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "22034": {
+      "status": "Indexed",
+      "tries": 1
     }
   },
-  "day": "2026-11-14",
+  "day": "2026-11-15",
   "attempted": [
-    26134,
-    38326,
-    45304,
-    130,
-    272,
-    273,
-    418,
-    1549,
-    1670,
-    1719
+    1722,
+    3296,
+    5265,
+    9371,
+    9912,
+    16769,
+    20245,
+    20379,
+    21112,
+    22034
   ]
 }

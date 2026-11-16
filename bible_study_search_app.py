@@ -17,6 +17,7 @@ if str(AUTOMATION_DIR) not in sys.path:
     sys.path.insert(0, str(AUTOMATION_DIR))
 
 import query_bible_study as qbs
+from transcript_reader import render_reader
 
 app = Flask(__name__)
 
@@ -763,6 +764,12 @@ def open_source():
         if (not context and not full_path.is_relative_to(BASE.resolve())) or not full_path.is_file():
             abort(404)
     elif context or full_path.suffix.lower() in {".txt", ".md"}:
+        reader_link = ""
+        if full_path.is_file() and full_path.suffix.lower() in {".txt", ".md"}:
+            if request.args.get("reader") == "1" or (not context and full_path.suffix.lower() == ".txt"):
+                pattern = build_highlight_pattern(query)
+                return render_reader(full_path, return_url, action_args, query, pattern)
+            reader_link = f'<a href="/open?{escape(action_args)}&amp;reader=1">Read full transcript</a>'
         pattern = build_highlight_pattern(query)
         if context:
             sections = []
@@ -860,6 +867,7 @@ def open_source():
         <body>
             <div class="toolbar">
                 <a href="{escape(return_url, quote=True)}">← Back to results</a>
+                {reader_link}
                 <a href="/open?{escape(action_args)}&amp;native=1">Open Source</a>
                 <a href="/reveal?{escape(action_args)}">Show in Finder</a>
                 <div class="font-controls">
