@@ -347,10 +347,18 @@ def read_passage(path, chunk_id):
         conn.close()
 
 
-def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced"):
+def related_phrases(query):
+    words = set(focus_words(query))
+    if words & {"pastor", "pastors", "elder", "elders"} and words & {"care", "church", "shepherd"}:
+        return ["feed the flock", "shepherd the flock", "tend the flock", "shepherding"]
+    return []
+
+
+def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced", related=True):
     query_tokens = focus_words(query) if search_mode == "balanced" else normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
-    topic_terms = get_topic_expansion_terms(query)
+    equivalents = related_phrases(query) if related and search_mode == "balanced" else []
+    topic_terms = (get_topic_expansion_terms(query) if related else []) + equivalents
     books = [book.lower() for book in BOOK_PATTERNS if re.search(r"\b" + re.escape(book) + r"\b", query, re.I)]
     topic_rules = get_topic_anchor_rules(query) or {}
     selected_source_types = []
@@ -494,11 +502,12 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     "title": row["title"],
                     "path": row["rel_path"],
                     "source_type": row["source_type"],
+                    "related_hits": [phrase for phrase in equivalents if phrase in lower_text],
                     "snippet": build_snippet(text, query, topic_terms, query_reference),
                 })
 
         refs_by_chunk = {}
-        if query_reference and results:
+        if results:
             ids = sorted({item["chunk_id"] for item in results})
             placeholders = ",".join("?" for _ in ids)
             for chunk_id, ref in conn.execute(
@@ -522,6 +531,9 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
             else:
                 evidence = "Search-word match" if query_reference else ""
             passage = {"chunk_id": chunk_id, "snippet": item["snippet"], "evidence": evidence}
+            passage["books"] = sorted({ref.rsplit(" ", 1)[0] for ref in refs})
+            if item.get("related_hits"):
+                passage["evidence"] = "Related wording: " + ", ".join(item["related_hits"])
             if item["path"] in sources:
                 sources[item["path"]]["passages"].append(passage)
             elif len(sources) < limit:
