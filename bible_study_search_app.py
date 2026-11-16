@@ -6,7 +6,7 @@ import threading
 import time
 import webbrowser
 from copy import deepcopy
-from flask import Flask, request, render_template_string, abort, Response
+from flask import Flask, request, render_template_string, abort, Response, url_for
 from html import escape
 from urllib.parse import urlencode
 from werkzeug.serving import make_server
@@ -18,7 +18,7 @@ if str(AUTOMATION_DIR) not in sys.path:
 
 import query_bible_study as qbs
 from transcript_reader import render_reader
-from study_passages import narrow_results, register_shelf
+from study_passages import COPY_SCRIPT, narrow_results, register_shelf, source_line
 
 app = Flask(__name__)
 register_shelf(app, qbs)
@@ -396,17 +396,18 @@ PAGE_TEMPLATE = """
             </label>
             {% if searched %}
             {% for field, label, choices, current in [('book','Cited Bible book',books,book),('course','LFBI course',courses,course)] %}
-            <label class="sort-control">{{ label }} <select name="{{ field }}"><option value="">All</option>
+            <label class="sort-control">{{ label }} <select name="{{ field }}" onchange="this.form.action='/#results';this.form.requestSubmit()"><option value="">All</option>
             {% if current and current not in dict(choices) %}<option selected value="{{ current }}">{{ current }} (0)</option>{% endif %}
             {% for value, count in choices %}<option value="{{ value }}" {% if current == value %}selected{% endif %}>{{ value.replace('_',' ') }} ({{ count }})</option>{% endfor %}
             </select></label>{% endfor %}
-            <small>Counts show sources among the ranked matches. Choose Search to apply.</small>
+            <small>Counts show sources among the ranked matches.</small>
             {% endif %}
             <div class="hint"><strong>Best matches</strong> is broad and ranked. Use <strong>All words</strong> to narrow a topic, or <strong>Exact phrase</strong> when wording matters.</div>
         </form>
 
         {% if searched %}
-            <div class="results-meta">Showing {{ results|length }} {{ 'result' if results|length == 1 else 'results' }}{% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
+            <div id="results" class="results-meta">
+                {% for label,link in active_filters %}<a class="summary-pill" href="{{ link }}" aria-label="Remove {{ label }}">{{ label }} ×</a> {% endfor %}Showing {{ results|length }} {{ 'result' if results|length == 1 else 'results' }}{% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
             <div class="results-summary">
                 {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">All sources</a>{% endif %}
                 {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
@@ -414,7 +415,7 @@ PAGE_TEMPLATE = """
 
             {% if grouped_results %}
                 {% for group in display_groups %}
-                <details class="group-section" open>
+                <details class="group-section" id="group-{{ group.key|default('library') }}" open>
                     <summary class="group-toggle">{{ group['label'] }} ({{ group['count'] }})</summary>
                     <div class="group-body">
                     {% for item in group['items'] %}
@@ -430,18 +431,19 @@ PAGE_TEMPLATE = """
                             </div>
                         </div>
                         {% for passage in item.passages %}
-                        {% if loop.index == 2 %}<details><summary>Show {{ loop.length - 1 }} more {{ 'passage' if loop.length == 2 else 'passages' }}</summary>{% endif %}
-                        {% if passage.evidence %}<small>{{ passage.evidence }}</small>{% endif %}
-                        <div class="snippet">{{ passage.snippet | safe }}</div>
-                        <a class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">Read this passage</a>
+                        {% if loop.index == 2 %}<details id="more-{{ item.passages[0].chunk_id }}"><summary>Show {{ loop.length - 1 }} more {{ 'passage' if loop.length == 2 else 'passages' }}</summary>{% endif %}
+                        <div data-passage>{% if passage.evidence %}<small>{{ passage.evidence }}</small>{% endif %}
+                        <div class="snippet" data-excerpt>{{ passage.snippet | safe }}</div>
+                        <a id="hit-{{ passage.chunk_id }}" class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">Read this passage</a>
+                        <button type="button" data-copy="{{ source_line(item.title,item.path) }}">Copy excerpt with source</button> <span role="status"></span>
                         <form method="post" action="/saved" style="display:inline">
                         <input type="hidden" name="path" value="{{ item.path }}"><input type="hidden" name="chunk" value="{{ passage.chunk_id }}">
                         <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="related" value="{{ related }}">
                         <input type="hidden" name="mode" value="{{ search_mode }}"><button>Save passage</button></form>
-                        {% if passage.copies %}<details><summary>View other copies ({{ passage.copies|length }})</summary>
-                        {% for title,path,chunk in passage.copies %}<p><a href="{{ url_for('open_source', path=path, chunk=chunk, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course) }}">{{ title }}</a></p>{% endfor %}
+                        {% if passage.copies %}<details id="copies-{{ passage.chunk_id }}"><summary>View other copies ({{ passage.copies|length }})</summary>
+                        {% for title,path,chunk in passage.copies %}<p><a id="hit-{{ chunk }}" href="{{ url_for('open_source', path=path, chunk=chunk, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course) }}">{{ title }}</a></p>{% endfor %}
                         </details>{% endif %}
-                        {% if loop.last and loop.length > 1 %}</details>{% endif %}
+                        </div>{% if loop.last and loop.length > 1 %}</details>{% endif %}
                         {% endfor %}
                         <div class="result-actions">
                             <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}&amp;book={{ book|urlencode }}&amp;course={{ course|urlencode }}&amp;related={{ related }}">Show in Finder</a>
@@ -468,6 +470,31 @@ PAGE_TEMPLATE = """
             </div>
         {% endif %}
     </div>
+<script>
+document.addEventListener('click', event => {
+    const link = event.target.closest('a[id^="hit-"]');
+    if (!link) return;
+    const state = {details: {}, offset: link.getBoundingClientRect().top};
+    document.querySelectorAll('details[id]').forEach(d => state.details[d.id] = d.open);
+    sessionStorage.setItem('study-return:' + link.id, JSON.stringify(state));
+});
+window.addEventListener('pageshow', () => {
+    const id = location.hash.slice(1);
+    if (!id.startsWith('hit-')) return;
+    const link = document.getElementById(id);
+    if (!link) return;
+    const state = JSON.parse(sessionStorage.getItem('study-return:' + id) || 'null');
+    if (state) document.querySelectorAll('details[id]').forEach(d => {
+        if (d.id in state.details) d.open = state.details[d.id];
+    });
+    for (let parent = link.parentElement; parent; parent = parent.parentElement)
+        if (parent.tagName === 'DETAILS') parent.open = true;
+    requestAnimationFrame(() => {
+        link.focus({preventScroll:true});
+        window.scrollBy(0, link.getBoundingClientRect().top - (state ? state.offset : 80));
+    });
+});
+</script>""" + COPY_SCRIPT + """
 </body>
 </html>
 """
@@ -723,6 +750,17 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
     groups = group_results(enriched_results)
     display_groups = ([{"label": "Best matches across the library", "count": len(enriched_results),
                         "items": enriched_results}] if sort == "library" else groups)
+    filters = []
+    options = dict(q=query, mode=search_mode, limit=limit, sort=sort, book=book, course=course,
+                   related=request.args.get("related", "on"), source_types=selected_source_types)
+    for field, label in [("book", "Cites "), ("course", "LFBI course: ")]:
+        if options[field]:
+            destination = dict(options)
+            destination.pop(field)
+            filters.append((label + options[field].replace("_", " "), url_for("index", **destination, _anchor="results")))
+    for source in selected_source_types:
+        destination = dict(options, source_types=[s for s in selected_source_types if s != source])
+        filters.append((source_type_label(source), url_for("index", **destination, _anchor="results")))
     return render_template_string(
         PAGE_TEMPLATE,
         query=query,
@@ -732,7 +770,7 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
         limit=limit,
         results=enriched_results,
         sort=sort,
-        books=books, courses=courses, book=book, course=course,
+        active_filters=filters, source_line=source_line, books=books, courses=courses, book=book, course=course,
         related=request.args.get("related", "on"), grouped_results=groups,
         display_groups=display_groups,
         source_label=source_type_label,
@@ -785,10 +823,16 @@ def open_source():
     return_args.append(("sort", request.args.get("sort") if request.args.get("sort") in {"library", "title"} else "rank"))
     return_args.extend(("source_types", value) for value in selected_source_types)
     return_args.extend((k, request.args[k]) for k in ("book","course","related") if k in request.args)
-    return_url = "/saved" if request.args.get("shelf") else "/?" + urlencode(return_args)
-
-    action_args = urlencode(return_args + [("path", rel_path)])
+    shelf_key = request.args.get("shelf", type=int)
     chunk_id = request.args.get("chunk", type=int)
+    return_url = (url_for("saved", study=request.args.get("study",type=int), find=request.args.get("find"),
+                          _anchor=f"passage-{shelf_key}") if shelf_key else "/?" + urlencode(return_args))
+    if not shelf_key and chunk_id is not None:
+        return_url += f"#hit-{chunk_id}"
+
+    if shelf_key:
+        return_args.extend((k, request.args[k]) for k in ("shelf","study","find") if k in request.args)
+    action_args = urlencode(return_args + [("path", rel_path)])
     context = qbs.read_passage(rel_path, chunk_id) if chunk_id is not None else []
     if "chunk" in request.args and not context:
         abort(404, "This passage has changed. Search again to refresh the results.")
@@ -907,7 +951,7 @@ def open_source():
         </head>
         <body>
             <div class="toolbar">
-                <a href="{escape(return_url, quote=True)}">← {'Saved passages' if return_url == '/saved' else 'Back to results'}</a>
+                <a href="{escape(return_url, quote=True)}">← {'Saved passages' if shelf_key else 'Back to results'}</a>
                 {reader_link}
                 {save_control}
                 <a href="/open?{escape(action_args)}&amp;native=1">Open Source</a>
