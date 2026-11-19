@@ -228,34 +228,39 @@ def get_topic_anchor_rules(query: str):
 
 
 def extract_query_reference(query: str):
-    q = query.strip()
-    match = QUERY_REFERENCE_REGEX.search(q)
+    names = {book.lower(): book for book in BOOK_PATTERNS}
+    names.update(ABBREVIATION_MAP)
+    names["psalm"] = "Psalms"
+    pattern = r"(?<!\w)(" + "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
+    pattern += r")\.?\s*(\d+)(?:\s*:\s*(\d+)(?:\s*[-–—]\s*(\d+))?)?(?!\d)"
+    match = re.search(pattern, query, re.I)
     if not match:
         return None
-
-    raw_book = match.group(1).strip().lower()
-    chapter = match.group(2)
-    verse = match.group(3)
-
-    normalized_book = None
-
-    for alias, full_book in sorted(ABBREVIATION_MAP.items(), key=lambda item: -len(item[0])):
-        if raw_book == alias:
-            normalized_book = full_book
-            break
-
-    if normalized_book is None:
-        for full_book in BOOK_PATTERNS:
-            if raw_book == full_book.lower():
-                normalized_book = full_book
-                break
-
-    if normalized_book is None:
+    book, chapter, start, end = match.groups()
+    if int(chapter) < 1 or (start and int(start) < 1) or (end and int(end) < int(start)):
         return None
+    reference = f"{names[book.lower()]} {int(chapter)}"
+    if start:
+        reference += f":{int(start)}"
+        if end:
+            reference += f"-{int(end)}"
+    return reference
 
-    if verse:
-        return f"{normalized_book} {chapter}:{verse}"
-    return f"{normalized_book} {chapter}"
+
+def references_overlap(left, right):
+    """Compare indexed single-chapter references, including verse ranges."""
+    left_chapter, _, left_verses = left.partition(":")
+    right_chapter, _, right_verses = right.partition(":")
+    if left_chapter != right_chapter:
+        return False
+    if not left_verses or not right_verses:
+        return True
+    try:
+        a = [int(v) for v in left_verses.split("-")]
+        b = [int(v) for v in right_verses.split("-")]
+    except ValueError:
+        return False
+    return a[0] <= b[-1] and b[0] <= a[-1]
 
 
 def fts_phrase(value: str) -> str:
@@ -354,7 +359,7 @@ def related_phrases(query):
     return []
 
 
-def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced", related=True):
+def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced", related=True, book="", course=""):
     query_tokens = focus_words(query) if search_mode == "balanced" else normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     equivalents = related_phrases(query) if related and search_mode == "balanced" else []
@@ -372,45 +377,37 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
         source_clause = f" AND d.source_type IN ({placeholders})"
         source_params = selected_source_types
 
-    conn = sqlite3.connect(DB_PATH)
+    if book:
+        source_clause += " AND EXISTS (SELECT 1 FROM chunk_refs br WHERE br.chunk_id=c.id AND (br.scripture_ref=? OR br.scripture_ref GLOB ?))"
+        source_params.extend([book, book + " [0-9]*"])
+    if course:
+        course_path = "02_LFBI/" + course + "/"
+        source_clause += " AND d.source_type='lfbi' AND (instr(d.rel_path,?)=1 OR instr(d.rel_path,?)>0)"
+        source_params.extend([course_path, "/" + course_path])
+
+    conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
 
     try:
         results = []
 
         if query_reference:
+            conn.create_function("reference_overlap", 2, references_overlap)
+            chapter = query_reference.partition(":")[0]
             ref_rows = conn.execute(
                 f"""
-                SELECT
-                    c.id AS chunk_id,
-                    d.title,
-                    d.rel_path,
-                    d.source_type,
-                    c.content,
-                    COUNT(cr.scripture_ref) AS ref_hits
-                FROM chunk_refs cr
-                JOIN chunks c ON c.id = cr.chunk_id
-                JOIN documents d ON d.id = c.document_id
-                WHERE cr.scripture_ref = ?{source_clause}
-                GROUP BY c.id, d.title, d.rel_path, d.source_type, c.content
-                ORDER BY
-                    CASE d.source_type
-                        WHEN 'commentary' THEN 1
-                        WHEN 'sermon_note' THEN 2
-                        WHEN 'church_sermon' THEN 3
-                        WHEN 'blog' THEN 4
-                        WHEN 'podcast' THEN 5
-                        ELSE 5
-                    END,
-                    d.title
-                LIMIT ?
-                """,
-                (query_reference, *source_params, limit)
-            ).fetchall()
+                SELECT c.id AS chunk_id, d.title, d.rel_path, d.source_type, c.content
+                FROM chunks c JOIN documents d ON d.id=c.document_id
+                WHERE EXISTS (SELECT 1 FROM chunk_refs cr WHERE cr.chunk_id=c.id
+                    AND (cr.scripture_ref=? OR cr.scripture_ref GLOB ?)
+                    AND reference_overlap(cr.scripture_ref,?)){source_clause}
+                ORDER BY d.rel_path,c.id
+                """, (chapter, chapter + ":[0-9]*", query_reference, *source_params)
+            )
 
             for row in ref_rows:
                 results.append({
-                    "score": 1000,
+                    "score": 100000,
                     "chunk_id": row["chunk_id"],
                     "title": row["title"],
                     "path": row["rel_path"],
@@ -434,10 +431,9 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                 JOIN documents d ON d.id = c.document_id
                 WHERE chunks_fts MATCH ?{source_clause}
                 ORDER BY rank
-                LIMIT 100
                 """,
                 (fts_query, *source_params)
-            ).fetchall()
+            )
 
             for row in fts_rows:
                 text = row["content"]
@@ -509,12 +505,21 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
         refs_by_chunk = {}
         if results:
             ids = sorted({item["chunk_id"] for item in results})
-            placeholders = ",".join("?" for _ in ids)
-            for chunk_id, ref in conn.execute(
-                f"SELECT chunk_id, scripture_ref FROM chunk_refs WHERE chunk_id IN ({placeholders})", ids
-            ):
-                refs_by_chunk.setdefault(chunk_id, set()).add(ref)
+            for start in range(0, len(ids), 500):
+                batch = ids[start:start + 500]
+                placeholders = ",".join("?" for _ in batch)
+                for chunk_id, ref in conn.execute(
+                    f"SELECT chunk_id, scripture_ref FROM chunk_refs WHERE chunk_id IN ({placeholders})", batch
+                ):
+                    refs_by_chunk.setdefault(chunk_id, set()).add(ref)
 
+        if query_reference:
+            for item in results:
+                refs = refs_by_chunk.get(item["chunk_id"], set())
+                if query_reference in refs:
+                    item["score"] += 300000
+                elif any(":" in ref and references_overlap(query_reference, ref) for ref in refs):
+                    item["score"] += 200000
         sources = {}
         seen_chunks = set()
         for item in sorted(results, key=lambda x: (-x["score"], x["path"], x["chunk_id"])):
@@ -526,6 +531,9 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
             chapter = (query_reference or "").partition(":")[0]
             if query_reference in refs:
                 evidence = f"Cites {query_reference}"
+            elif query_reference and any(references_overlap(query_reference, ref) for ref in refs):
+                matching = sorted(ref for ref in refs if references_overlap(query_reference, ref))
+                evidence = "Cites " + ", ".join(matching)
             elif chapter and any(ref.partition(":")[0] == chapter for ref in refs):
                 evidence = f"Mentions {chapter}"
             else:
@@ -536,7 +544,7 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                 passage["evidence"] = "Related wording: " + ", ".join(item["related_hits"])
             if item["path"] in sources:
                 sources[item["path"]]["passages"].append(passage)
-            elif len(sources) < limit:
+            elif limit is None or len(sources) < limit:
                 sources[item["path"]] = {**item, "passages": [passage]}
         return list(sources.values())
 
