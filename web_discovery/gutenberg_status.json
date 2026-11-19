@@ -84,19 +84,172 @@
     "22034": {
       "status": "Indexed",
       "tries": 1
+    },
+    "11449": {
+      "status": "Already in library"
+    },
+    "22148": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "22331": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "23438": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "24890": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "26172": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "26384": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "27288": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "27978": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "28464": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "29678": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "30619": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "31090": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "31603": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "31604": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "34904": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "36216": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "36722": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "36857": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "37696": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "38960": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "40341": {
+      "status": "Indexed"
+    },
+    "42518": {
+      "status": "Indexed"
+    },
+    "42657": {
+      "status": "Indexed"
+    },
+    "45001": {
+      "status": "Indexed"
+    },
+    "45423": {
+      "status": "Indexed"
+    },
+    "45463": {
+      "status": "Indexed"
+    },
+    "48193": {
+      "status": "Indexed"
+    },
+    "49018": {
+      "status": "Indexed"
+    },
+    "51931": {
+      "status": "Indexed"
+    },
+    "52648": {
+      "status": "Indexed"
+    },
+    "53465": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "55228": {
+      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/55228/pg55228.txt', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpf6g49cga/']' returned non-zero exit status 1.",
+      "tries": 1
+    },
+    "55743": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "57109": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "60669": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "63486": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "64392": {
+      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/64392/pg64392.txt', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmp9ten6tpo/']' returned non-zero exit status 1.",
+      "tries": 1
+    },
+    "65688": {
+      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/65688/pg65688.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpb7ems2jn/']' returned non-zero exit status 1.",
+      "tries": 1
+    },
+    "68976": {
+      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/68976/pg68976.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpgk6y_392/']' returned non-zero exit status 1.",
+      "tries": 1
+    },
+    "70258": {
+      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/70258/pg70258.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmphe_y96lu/']' returned non-zero exit status 1.",
+      "tries": 1
     }
   },
-  "day": "2026-11-15",
+  "day": "2026-11-19",
   "attempted": [
-    1722,
-    3296,
-    5265,
-    9371,
-    9912,
-    16769,
-    20245,
-    20379,
-    21112,
-    22034
+    53465,
+    55228,
+    55743,
+    57109,
+    60669,
+    63486,
+    64392,
+    65688,
+    68976,
+    70258
   ]
 }

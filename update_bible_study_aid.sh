@@ -265,7 +265,7 @@ fi
 
 if [ "$FAILURES" -ne 0 ]; then
     echo "Update completed with $FAILURES failed stages; review this log." | tee -a "$LOG_FILE"
-    osascript -e 'display notification "Bible Study Aid update has errors. See the latest log." with title "Bible Study Aid"' || true
+    [ "${BIBLE_STUDY_UNATTENDED:-0}" = "1" ] || osascript -e 'display notification "Bible Study Aid update has errors. See the latest log." with title "Bible Study Aid"' || true
     run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"
     exit 1
 fi
@@ -275,4 +275,4 @@ if ! run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"; the
     exit 1
 fi
 echo "Log saved to: $LOG_FILE"
-osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'
+[ "${BIBLE_STUDY_UNATTENDED:-0}" = "1" ] || osascript -e 'display notification "Bible Study Aid update finished." with title "Bible Study Aid" subtitle "See the latest log file for details." sound name "Glass"'

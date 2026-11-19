@@ -327,6 +327,8 @@ def read_xlsx_text(path: Path) -> str:
 
 
 def read_pages_text(path: Path) -> str:
+    if os.environ.get("BIBLE_STUDY_UNATTENDED") == "1":
+        raise RuntimeError("Pages extraction deferred to a manual updater run; previous index retained")
     escaped_path = str(path).replace("\\", "\\\\").replace('"', '\\"')
     applescript = f'''
     tell application "Pages"
