@@ -3,8 +3,7 @@ import sqlite3
 import sys
 import re
 
-BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
-DB_PATH = BASE / "99_Index" / "bible_study.db"
+from library_settings import LIBRARY_ROOT as BASE, INDEX_PATH as DB_PATH
 
 BOOK_PATTERNS = [
     "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",

@@ -11,10 +11,7 @@ from html import escape
 from urllib.parse import urlencode
 from werkzeug.serving import make_server
 
-AUTOMATION_DIR = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/98_Automation")
-BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
-if str(AUTOMATION_DIR) not in sys.path:
-    sys.path.insert(0, str(AUTOMATION_DIR))
+from library_settings import LIBRARY_ROOT as BASE, source_path
 
 import query_bible_study as qbs
 from transcript_reader import render_reader
@@ -639,26 +636,11 @@ def add_result_context(results):
 
 
 def resolve_result_path(stored_path: str) -> Path:
-    raw = (stored_path or "").strip()
-    if not raw:
-        raise FileNotFoundError("Empty stored path")
-
-    candidate = Path(raw)
-
-    if candidate.is_absolute():
-        candidate = candidate.resolve()
-        if not candidate.exists():
-            raise FileNotFoundError(f"Absolute path does not exist: {candidate}")
-        return candidate
-
-    candidate = (BASE / raw).resolve()
-    try:
-        candidate.relative_to(BASE.resolve())
-    except ValueError:
-        raise FileNotFoundError(f"Relative path escaped BASE: {raw}")
+    candidate = source_path(stored_path)
     if not candidate.exists():
-        raise FileNotFoundError(f"Relative path does not exist under BASE: {candidate}")
+        raise FileNotFoundError(f"Source is unavailable: {candidate}")
     return candidate
+
 
 def active_terms(query):
     if request.args.get("related") == "off":

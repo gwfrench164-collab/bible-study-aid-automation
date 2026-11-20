@@ -5,7 +5,7 @@ import sqlite3
 
 from flask import abort, redirect, render_template_string, request, url_for
 
-SAVED = Path.home() / "Library/Application Support/Bible Study Aid/saved-passages.sqlite"
+from library_settings import STUDIES_PATH as SAVED, source_path
 COPY_SCRIPT = """<script>
 document.addEventListener('click', async event => {
     const button = event.target.closest('[data-copy]');
@@ -251,7 +251,7 @@ def register_shelf(app, qbs):
             found = index.execute("""SELECT c.id FROM chunks c JOIN documents d ON d.id=c.document_id
                 WHERE d.rel_path=? AND c.content=? ORDER BY (c.id=?) DESC,c.chunk_index LIMIT 1""",
                 (row["path"],row["body"],row["chunk"])).fetchone()
-        if found and (qbs.BASE / row["path"]).is_file():
+        if found and source_path(row["path"]).is_file():
             return redirect(url_for("open_source", path=row["path"], chunk=found[0], q=row["query"], shelf=key, study=request.args.get("study",type=int), find=request.args.get("find") or None))
         return render_template_string("""<a href="/saved">Saved passages</a><h1>{{ row.title }}</h1>
             <p>The original passage is unavailable. Here is your saved copy.</p>
