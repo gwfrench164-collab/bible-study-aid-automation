@@ -237,19 +237,59 @@
     "70258": {
       "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/70258/pg70258.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmphe_y96lu/']' returned non-zero exit status 1.",
       "tries": 1
+    },
+    "70561": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "70693": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "71140": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "73012": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "73032": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "73267": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "73271": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "75892": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "76305": {
+      "status": "Collected for indexing",
+      "tries": 1
+    },
+    "76774": {
+      "status": "Collected for indexing",
+      "tries": 1
     }
   },
-  "day": "2026-11-19",
+  "day": "2026-11-20",
   "attempted": [
-    53465,
-    55228,
-    55743,
-    57109,
-    60669,
-    63486,
-    64392,
-    65688,
-    68976,
-    70258
+    70561,
+    70693,
+    71140,
+    73012,
+    73032,
+    73267,
+    73271,
+    75892,
+    76305,
+    76774
   ]
 }
