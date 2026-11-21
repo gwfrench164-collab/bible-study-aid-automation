@@ -99,6 +99,30 @@ class SearchCoverageTests(unittest.TestCase):
         prefs.set_preferred(pursuit, False)
         self.assertFalse(prefs.is_preferred('/Reference/52 Weeks of Pursuit/Week2.pdf', prefs.load_preferences()))
 
+    def test_management_changes_search_preferences_immediately(self):
+        import bible_study_search_app as ui
+        client = ui.app.test_client()
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("UPDATE documents SET title='John Calvin - Institutes' WHERE id=131")
+        self.assertEqual(client.get('/preferences').status_code, 200)
+        self.assertEqual(client.get('/preferences?find=Lesson').status_code, 200)
+        self.assertFalse(any('Calvin' in r['title'] for r in search.run_query('resurrection',limit=None)))
+        self.assertEqual(client.post('/preferences/author',data={'name':'John Calvin','action':'remove'}).status_code,303)
+        self.assertTrue(any('Calvin' in r['title'] for r in search.run_query('resurrection',limit=None)))
+        client.post('/preferences/author',data={'name':'John Calvin','action':'add'})
+        self.assertFalse(any('Calvin' in r['title'] for r in search.run_query('resurrection',limit=None)))
+        client.post('/preferences/author',data={'name':'Custom Writer','action':'add'})
+        self.assertIn(b'Custom Writer', client.get('/preferences').data)
+        client.post('/preferences/author',data={'name':'Custom Writer','action':'remove'})
+        self.assertNotIn(b'Custom Writer', client.get('/preferences').data)
+        path='02_LFBI/Course_130/lesson.txt'
+        client.post('/preferences/source',data={'path':path,'action':'add'})
+        self.assertEqual(search.run_query('resurrection')[0]['path'],path)
+        self.assertIn(b'Remove preference',client.get('/preferences').data)
+        client.post('/preferences/source',data={'key':'file:'+path,'action':'remove'})
+        self.assertFalse(any(r.get('preferred_source') for r in search.run_query('resurrection',limit=None)))
+        self.assertEqual(client.post('/preferences/author',data={'name':' ','action':'add'}).status_code,400)
+
     def test_abbreviations_and_modes(self):
         self.assertEqual(search.extract_query_reference("Explain 1 Cor. 15:3–4"), "1 Corinthians 15:3-4")
         self.assertEqual(search.extract_query_reference("Rom. 8:28"), "Romans 8:28")

@@ -3,7 +3,8 @@ import sqlite3
 import hashlib
 import sys
 import re
-from source_preferences import load_preferences, is_preferred, source_key
+from source_preferences import load_preferences, is_preferred, source_key, load_excluded_authors
+from functools import lru_cache
 
 from library_settings import LIBRARY_ROOT as BASE, INDEX_PATH as DB_PATH
 
@@ -382,7 +383,8 @@ def related_phrases(query):
     return []
 
 
-def excluded_author(title, path):
+@lru_cache(maxsize=16384)
+def excluded_author(title, path, authors=("John Calvin", "Origen", "Augustine")):
     """Recognize attributed works, not discussions mentioning these authors."""
     aliases = {
         "John Calvin": ("john calvin", "calvin"),
@@ -390,7 +392,8 @@ def excluded_author(title, path):
         "Augustine": ("augustine of hippo", "augustine", "saint augustine", "st. augustine", "agustine"),
     }
     labels = [title, *Path(path).parts]
-    for author, names in aliases.items():
+    for author in authors:
+        names = aliases.get(author, (author.casefold(),))
         for label in labels:
             label = label.casefold().replace("_", " ").strip()
             if any(label == name or any(label.startswith(name + sep) for sep in (" - ", " – ", " — ", ": "))
@@ -428,7 +431,8 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
     conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     if not include_excluded:
-        conn.create_function("excluded_author", 2, excluded_author, deterministic=True)
+        authors = load_excluded_authors()
+        conn.create_function("excluded_author", 2, lambda title, path: excluded_author(title, path, authors), deterministic=True)
         source_clause += " AND excluded_author(d.title,d.rel_path)=''"
 
     try:

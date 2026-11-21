@@ -20,6 +20,8 @@ from study_passages import COPY_SCRIPT, narrow_results, register_shelf, source_l
 
 app = Flask(__name__)
 register_shelf(app, qbs)
+from source_management import register_management
+register_management(app, qbs)
 
 PAGE_TEMPLATE = """
 <!doctype html>
@@ -363,7 +365,7 @@ PAGE_TEMPLATE = """
 <body>
     <div class="page">
         <div class="header">
-            <h1>Bible Study Aid</h1><a href="/saved">Saved passages</a>
+            <h1>Bible Study Aid</h1><a href="/saved">Saved passages</a> · <a href="/preferences">Manage sources</a>
             <p>Search your local library by passage, phrase, or Bible-study topic.</p>
         </div>
 
@@ -378,7 +380,7 @@ PAGE_TEMPLATE = """
             <details class="refinements" {% if include_excluded or source_name or book or course or selected_source_types or search_mode != 'balanced' %}open{% endif %}>
             <summary>Refine results</summary><div class="refine-grid">
             <label class="sort-control"><span><input type="checkbox" name="include_excluded" value="on" {% if include_excluded %}checked{% endif %}> Include excluded authors</span>
-                <small>Calvin, Origen, and Augustine are excluded by default. Check to consult their works.</small>
+                <small>Temporarily include authors excluded in your preferences. <a href="/preferences">Manage sources</a></small>
             </label>
             <label class="sort-control">Source title or folder
                 <input type="search" name="source_name" value="{{ source_name }}" placeholder="e.g. 52 Weeks of Pursuit">
