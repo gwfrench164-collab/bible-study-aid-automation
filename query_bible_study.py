@@ -381,7 +381,24 @@ def related_phrases(query):
     return []
 
 
-def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced", related=True, book="", course=""):
+def excluded_author(title, path):
+    """Recognize attributed works, not discussions mentioning these authors."""
+    aliases = {
+        "John Calvin": ("john calvin", "calvin"),
+        "Origen": ("origen",),
+        "Augustine": ("augustine of hippo", "augustine", "saint augustine", "st. augustine", "agustine"),
+    }
+    labels = [title, *Path(path).parts]
+    for author, names in aliases.items():
+        for label in labels:
+            label = label.casefold().replace("_", " ").strip()
+            if any(label == name or any(label.startswith(name + sep) for sep in (" - ", " – ", " — ", ": "))
+                   for name in names):
+                return author
+    return ""
+
+
+def run_query(query: str, limit: int = 20, source_types=None, search_mode: str = "balanced", related=True, book="", course="", include_excluded=False):
     query_tokens = focus_words(query) if search_mode == "balanced" else normalize_query_tokens(query)
     query_reference = extract_query_reference(query)
     equivalents = related_phrases(query) if related and search_mode == "balanced" else []
@@ -409,6 +426,9 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
 
     conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
+    if not include_excluded:
+        conn.create_function("excluded_author", 2, excluded_author, deterministic=True)
+        source_clause += " AND excluded_author(d.title,d.rel_path)=''"
 
     try:
         results = []

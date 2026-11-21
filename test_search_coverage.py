@@ -54,6 +54,19 @@ class SearchCoverageTests(unittest.TestCase):
         self.assertFalse(search.references_overlap("Romans 8:31","Romans 8:26-30"))
         self.assertFalse(search.references_overlap("Romans 9:28","Romans 8:26-30"))
 
+    def test_author_opt_in_applies_to_words_and_references(self):
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("UPDATE documents SET title='John Calvin - Institutes' WHERE id=131")
+        for query in ('resurrection', 'Romans 8:28'):
+            ordinary = search.run_query(query, limit=None)
+            included = search.run_query(query, limit=None, include_excluded=True)
+            self.assertFalse(any('Calvin' in r['title'] for r in ordinary))
+            self.assertTrue(any('Calvin' in r['title'] for r in included))
+        for title in ('Episode 240: Augustinian-Calvinism', 'Not Calvinist Not Arminian', 'A discussion of Origen'):
+            self.assertFalse(search.excluded_author(title, '05_Podcasts/episode.txt'))
+        for title in ('Origen - Writings', 'Augustine of Hippo - Confessions', 'John Calvin - Institutes'):
+            self.assertTrue(search.excluded_author(title, '/Reference/work.txt'))
+
     def test_abbreviations_and_modes(self):
         self.assertEqual(search.extract_query_reference("Explain 1 Cor. 15:3–4"), "1 Corinthians 15:3-4")
         self.assertEqual(search.extract_query_reference("Rom. 8:28"), "Romans 8:28")

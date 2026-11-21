@@ -374,8 +374,15 @@ PAGE_TEMPLATE = """
                 </div>
                 <button type="submit">Search</button>
             </div>
-            <details class="refinements" {% if book or course or selected_source_types or search_mode != 'balanced' %}open{% endif %}>
+            <details class="refinements" {% if include_excluded or source_name or book or course or selected_source_types or search_mode != 'balanced' %}open{% endif %}>
             <summary>Refine results</summary><div class="refine-grid">
+            <label class="sort-control"><span><input type="checkbox" name="include_excluded" value="on" {% if include_excluded %}checked{% endif %}> Include excluded authors</span>
+                <small>Calvin, Origen, and Augustine are excluded by default. Check to consult their works.</small>
+            </label>
+            <label class="sort-control">Source title or folder
+                <input type="search" name="source_name" value="{{ source_name }}" placeholder="e.g. 52 Weeks of Pursuit">
+                <small>Find your search words within a particular work or collection.</small>
+            </label>
                 <div>
                     <label class="field-label">Source Types</label>
                     <div class="source-filter-box">
@@ -428,10 +435,10 @@ PAGE_TEMPLATE = """
 
         {% if searched %}
             <div id="results" class="results-meta">
-                {% for label,link in active_filters %}<a class="summary-pill" href="{{ link }}" aria-label="Remove {{ label }}">{{ label }} ×</a> {% endfor %}Showing {{ start + 1 if results else 0 }}–{{ start + results|length }} of {{ total }} sources{% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
+                {% for label,link in active_filters %}<a class="summary-pill" href="{{ link }}" aria-label="Remove {{ label }}">{{ label }} ×</a> {% endfor %}Showing {{ start + 1 if results else 0 }}–{{ start + results|length }} of {{ total }} sources ({{ limit }} per page){% if query %} for <strong>{{ query }}</strong>{% endif %}{% if selected_source_labels %} in <strong>{{ selected_source_labels | join(', ') }}</strong>{% endif %}.</div>
             <div class="results-summary">
-                {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">All sources</a>{% endif %}
-                {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
+                {% if selected_source_types %}<a class="summary-pill" href="{{ url_for('index', q=query, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, source_name=source_name, include_excluded=include_excluded) }}">All sources</a>{% endif %}
+                {% for group in grouped_results %}<a class="summary-pill {% if selected_source_types == [group['key']] %}active{% endif %}" href="{{ url_for('index', q=query, source_types=group['key'], mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, source_name=source_name, include_excluded=include_excluded) }}">{{ group['label'] }}: {{ group['count'] }}</a>{% endfor %}
             </div>
 
             {% if grouped_results %}
@@ -455,19 +462,19 @@ PAGE_TEMPLATE = """
                         {% if loop.index == 2 %}<details id="more-{{ item.passages[0].chunk_id }}"><summary>Show {{ loop.length - 1 }} more {{ 'passage' if loop.length == 2 else 'passages' }}</summary>{% endif %}
                         <div data-passage>{% if passage.evidence %}<small>{{ passage.evidence }}</small>{% endif %}
                         <div class="snippet" data-excerpt>{{ passage.snippet | safe }}</div>
-                        <a id="hit-{{ passage.chunk_id }}" class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, anchor=passage.anchor, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, page=page) }}">Read this passage</a>
+                        <a id="hit-{{ passage.chunk_id }}" class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, anchor=passage.anchor, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, source_name=source_name, include_excluded=include_excluded, page=page) }}">Read this passage</a>
                         <button type="button" data-copy="{{ source_line(item.title,item.path) }}">Copy excerpt with source</button> <span role="status"></span>
                         <form method="post" action="/saved" style="display:inline">
                         <input type="hidden" name="path" value="{{ item.path }}"><input type="hidden" name="chunk" value="{{ passage.chunk_id }}"><input type="hidden" name="anchor" value="{{ passage.anchor }}">
                         <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="related" value="{{ related }}">
                         <input type="hidden" name="mode" value="{{ search_mode }}"><button>Save passage</button></form>
                         {% if passage.copies %}<details id="copies-{{ passage.chunk_id }}"><summary>View other copies ({{ passage.copies|length }})</summary>
-                        {% for title,path,chunk,anchor in passage.copies %}<p><a id="hit-{{ chunk }}" href="{{ url_for('open_source', path=path, chunk=chunk, anchor=anchor, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course, page=page) }}">{{ title }}</a></p>{% endfor %}
+                        {% for title,path,chunk,anchor in passage.copies %}<p><a id="hit-{{ chunk }}" href="{{ url_for('open_source', path=path, chunk=chunk, anchor=anchor, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course, source_name=source_name, include_excluded=include_excluded, page=page) }}">{{ title }}</a></p>{% endfor %}
                         </details>{% endif %}
                         </div>{% if loop.last and loop.length > 1 %}</details>{% endif %}
                         {% endfor %}
                         <div class="result-actions">
-                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}&amp;book={{ book|urlencode }}&amp;course={{ course|urlencode }}&amp;related={{ related }}&amp;page={{ page }}">Show in Finder</a>
+                            <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}&amp;book={{ book|urlencode }}&amp;course={{ course|urlencode }}&amp;related={{ related }}&amp;include_excluded={{ include_excluded }}&amp;source_name={{ source_name|urlencode }}&amp;page={{ page }}">Show in Finder</a>
                         </div>
                         <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
                     </div>
@@ -753,7 +760,15 @@ def run_desktop_app():
 def render_page(query, selected_source_types, search_mode, limit, results, searched):
     sort = request.args.get("sort") if request.args.get("sort") in {"library", "title"} else "rank"
     book, course = request.args.get("book", ""), request.args.get("course", "")
+    include_excluded = "on" if request.args.get("include_excluded") == "on" else ""
+    source_name = request.args.get("source_name", "").strip()
+    # Filter before duplicate folding so the requested work stays visible.
+    words = source_name.casefold().split()
+    results = [item for item in results if all(word in
+               (item["title"] + " " + item["path"]).replace("_", " ").replace("+", " ").casefold()
+               for word in words)]
     results, books, courses = narrow_results(results, book, course)
+    summary_groups = group_results(results)
     if sort == "title":
         results.sort(key=lambda item: (item["title"] or "").casefold())
     page = max(1, request.args.get("page", 1, type=int) or 1)
@@ -765,9 +780,9 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
     display_groups = ([{"label": "Best matches across the library", "count": len(enriched_results),
                         "items": enriched_results}] if sort == "library" else groups)
     filters = []
-    options = dict(q=query, mode=search_mode, limit=limit, sort=sort, book=book, course=course,
+    options = dict(q=query, mode=search_mode, limit=limit, sort=sort, book=book, course=course, source_name=source_name, include_excluded=include_excluded,
                    related=request.args.get("related", "on"), source_types=selected_source_types)
-    for field, label in [("book", "Cites "), ("course", "LFBI course: ")]:
+    for field, label in [("book", "Cites "), ("course", "LFBI course: "), ("source_name", "Source: "), ("include_excluded", "Excluded authors included: ")]:
         if options[field]:
             destination = dict(options)
             destination.pop(field)
@@ -784,8 +799,8 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
         limit=limit,
         results=enriched_results,
         sort=sort,
-        active_filters=filters, source_line=source_line, books=books, courses=courses, book=book, course=course,
-        related=request.args.get("related", "on"), grouped_results=groups,
+        active_filters=filters, source_line=source_line, books=books, courses=courses, book=book, course=course, source_name=source_name, include_excluded=include_excluded,
+        related=request.args.get("related", "on"), grouped_results=summary_groups,
         display_groups=display_groups,
         source_label=source_type_label,
         searched=searched, total=total, page=page, start=start,
@@ -815,7 +830,7 @@ def reveal_in_finder():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off")
+        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off", include_excluded=request.args.get("include_excluded") == "on")
         results = raw_results
 
     return render_page(query, selected_source_types, search_mode, limit, results, searched)
@@ -838,7 +853,7 @@ def open_source():
     return_args = [("q", query), ("mode", search_mode), ("limit", str(limit))]
     return_args.append(("sort", request.args.get("sort") if request.args.get("sort") in {"library", "title"} else "rank"))
     return_args.extend(("source_types", value) for value in selected_source_types)
-    return_args.extend((k, request.args[k]) for k in ("book","course","related","page") if k in request.args)
+    return_args.extend((k, request.args[k]) for k in ("book","course","related","page","source_name","include_excluded") if k in request.args)
     shelf_key = request.args.get("shelf", type=int)
     chunk_id = request.args.get("chunk", type=int)
     return_url = (url_for("saved", study=request.args.get("study",type=int), find=request.args.get("find"),
@@ -1031,7 +1046,7 @@ def open_source():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off")
+        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off", include_excluded=request.args.get("include_excluded") == "on")
         results = raw_results
 
     return render_page(query, selected_source_types, search_mode, limit, results, searched)
@@ -1048,7 +1063,7 @@ def index():
     searched = bool(query)
 
     if query:
-        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off")
+        raw_results = qbs.run_query(query, limit=None, source_types=selected_source_types, search_mode=search_mode, related=request.args.get("related") != "off", include_excluded=request.args.get("include_excluded") == "on")
         results = raw_results
 
     return render_page(query, selected_source_types, search_mode, limit, results, searched)
