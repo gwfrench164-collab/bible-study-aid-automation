@@ -3,6 +3,7 @@ import sqlite3
 import hashlib
 import sys
 import re
+from source_preferences import load_preferences, is_preferred, source_key
 
 from library_settings import LIBRARY_ROOT as BASE, INDEX_PATH as DB_PATH
 
@@ -566,10 +567,13 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     item["score"] += 200000
         # Promote the user's frequently used collection without overriding
         # the much larger bonuses for exact Scripture-reference matches.
+        preferences = load_preferences()
         for item in results:
-            if re.search(r"\b52[ _+]+weeks[ _+]+of[ _+]+pursuit\b", item["path"], re.I):
+            item["preferred_source"] = is_preferred(item["path"], preferences)
+            item["preferred_collection"] = source_key(item["path"]).startswith("collection:")
+            if item["preferred_source"]:
                 item["score"] += 5000
-                item["preferred_source"] = True
+            if item["preferred_collection"]:
                 if "52 weeks of pursuit" not in item["title"].casefold():
                     section = item["title"].replace("+", " ").replace("_", " ").strip()
                     section = re.sub(r"^\d{3}-", "", section)

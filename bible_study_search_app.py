@@ -6,7 +6,7 @@ import threading
 import time
 import webbrowser
 from copy import deepcopy
-from flask import Flask, request, render_template_string, abort, Response, url_for
+from flask import Flask, request, render_template_string, abort, Response, url_for, redirect
 from html import escape
 from urllib.parse import urlencode
 from werkzeug.serving import make_server
@@ -15,6 +15,7 @@ from library_settings import LIBRARY_ROOT as BASE, source_path
 
 import query_bible_study as qbs
 from transcript_reader import render_reader
+from source_preferences import set_preferred
 from study_passages import COPY_SCRIPT, narrow_results, register_shelf, source_line
 
 app = Flask(__name__)
@@ -475,6 +476,12 @@ PAGE_TEMPLATE = """
                         </div>{% if loop.last and loop.length > 1 %}</details>{% endif %}
                         {% endfor %}
                         <div class="result-actions">
+                            <form method="post" action="/source-preference">
+                                <input type="hidden" name="path" value="{{ item.path }}">
+                                <input type="hidden" name="enabled" value="{{ '0' if item.preferred_source else '1' }}">
+                                {% for key, value in request.args.items(multi=True) %}<input type="hidden" name="return_{{ key }}" value="{{ value }}">{% endfor %}
+                                <button>{{ 'Remove favorite' if item.preferred_source else 'Favorite this source' }}{{ ' collection' if item.preferred_collection else '' }}</button>
+                            </form>
                             <a class="result-link" href="/reveal?path={{ item.path | urlencode }}&q={{ query | urlencode }}{% for st in selected_source_types %}&source_types={{ st | urlencode }}{% endfor %}&mode={{ search_mode | urlencode }}&limit={{ limit }}&amp;sort={{ sort }}&amp;book={{ book|urlencode }}&amp;course={{ course|urlencode }}&amp;related={{ related }}&amp;include_excluded={{ include_excluded }}&amp;source_name={{ source_name|urlencode }}&amp;page={{ page }}">Show in Finder</a>
                         </div>
                         <details class="source-location"><summary>File location</summary><div class="path">{{ item.path }}</div></details>
@@ -808,6 +815,24 @@ def render_page(query, selected_source_types, search_mode, limit, results, searc
         previous_url=url_for("index", **options, page=page-1, _anchor="results") if page > 1 else None,
         next_url=url_for("index", **options, page=page+1, _anchor="results") if start+limit < total else None,
     )
+
+
+@app.post("/source-preference")
+def update_source_preference():
+    path = request.form.get("path", "")
+    enabled = request.form.get("enabled")
+    if enabled not in {"0", "1"}:
+        abort(400)
+    import sqlite3
+    from contextlib import closing
+    with closing(sqlite3.connect(qbs.DB_PATH.as_uri() + "?mode=ro", uri=True)) as db:
+        if not db.execute("SELECT 1 FROM documents WHERE rel_path=?", (path,)).fetchone():
+            abort(404)
+    set_preferred(path, enabled == "1")
+    allowed = {"q", "source_types", "mode", "limit", "sort", "related", "book", "course", "source_name", "include_excluded"}
+    params = [(key[7:], value) for key, value in request.form.items(multi=True)
+              if key.startswith("return_") and key[7:] in allowed]
+    return redirect("/?" + urlencode(params) + "#results", code=303)
 
 
 @app.route("/reveal", methods=["GET"])

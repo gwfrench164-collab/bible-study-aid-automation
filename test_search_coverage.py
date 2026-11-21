@@ -14,6 +14,10 @@ class SearchCoverageTests(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.db_path = Path(self.folder.name) / "index.sqlite"
+        import source_preferences
+        preferences_patch = patch.object(source_preferences, 'STUDIES_PATH', Path(self.folder.name) / 'studies.sqlite')
+        preferences_patch.start()
+        self.addCleanup(preferences_patch.stop)
         with closing(sqlite3.connect(self.db_path)) as db, db:
             db.executescript("""
                 CREATE TABLE documents(id INTEGER PRIMARY KEY,title TEXT,rel_path TEXT,source_type TEXT);
@@ -75,6 +79,25 @@ class SearchCoverageTests(unittest.TestCase):
         self.assertEqual(rows[0]['title'], '52 Weeks of Pursuit — Week 5-8')
         self.assertEqual(search.run_query('Romans 8:28 resurrection')[0]['title'], 'Lesson 131')
         self.assertEqual(search.run_query('nonexistentword'), [])
+
+    def test_saved_favorite_promotes_and_removes_without_index_changes(self):
+        import source_preferences as prefs
+        import bible_study_search_app as ui
+        path = '02_LFBI/Course_131/lesson.txt'
+        original = self.db_path.read_bytes()
+        client = ui.app.test_client()
+        response = client.post('/source-preference', data={'path':path, 'enabled':'1', 'return_q':'resurrection', 'return_page':'9'})
+        self.assertEqual(response.status_code, 303)
+        self.assertNotIn('page=', response.location)
+        self.assertTrue(prefs.is_preferred(path, prefs.load_preferences()))
+        self.assertEqual(search.run_query('resurrection')[0]['path'], path)
+        client.post('/source-preference', data={'path':path, 'enabled':'0'})
+        self.assertFalse(prefs.is_preferred(path, prefs.load_preferences()))
+        self.assertEqual(self.db_path.read_bytes(), original)
+        self.assertEqual(client.post('/source-preference', data={'path':'unknown', 'enabled':'1'}).status_code,404)
+        pursuit = '/Reference/52 Weeks of Pursuit/Week1.pdf'
+        prefs.set_preferred(pursuit, False)
+        self.assertFalse(prefs.is_preferred('/Reference/52 Weeks of Pursuit/Week2.pdf', prefs.load_preferences()))
 
     def test_abbreviations_and_modes(self):
         self.assertEqual(search.extract_query_reference("Explain 1 Cor. 15:3–4"), "1 Corinthians 15:3-4")
