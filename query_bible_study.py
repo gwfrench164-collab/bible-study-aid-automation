@@ -1,5 +1,6 @@
 from pathlib import Path
 import sqlite3
+import hashlib
 import sys
 import re
 
@@ -336,6 +337,28 @@ def build_snippet(text: str, query: str, topic_terms=None, query_reference=None)
     return snippet
 
 
+def passage_anchor(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def resolve_passage_id(path, chunk_id, anchor=""):
+    """Keep a source passage addressable when an index rebuild changes row IDs."""
+    conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
+    try:
+        rows = conn.execute("""SELECT c.id,c.content FROM chunks c JOIN documents d
+            ON d.id=c.document_id WHERE d.rel_path=?
+            ORDER BY (c.id=?) DESC,c.chunk_index""", (path,chunk_id))
+        for found_id, text in rows:
+            if anchor:
+                if passage_anchor(text) == anchor:
+                    return found_id
+            elif found_id == chunk_id:
+                return found_id
+        return None
+    finally:
+        conn.close()
+
+
 def read_passage(path, chunk_id):
     """Read the selected indexed passage and its immediate neighbors in source order."""
     conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
@@ -411,6 +434,7 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     "title": row["title"],
                     "path": row["rel_path"],
                     "source_type": row["source_type"],
+                    "anchor": passage_anchor(row["content"]),
                     "snippet": build_snippet(row["content"], query, topic_terms, query_reference),
                 })
 
@@ -498,6 +522,7 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     "path": row["rel_path"],
                     "source_type": row["source_type"],
                     "related_hits": [phrase for phrase in equivalents if phrase in lower_text],
+                    "anchor": passage_anchor(text),
                     "snippet": build_snippet(text, query, topic_terms, query_reference),
                 })
 
@@ -537,7 +562,7 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                 evidence = f"Mentions {chapter}"
             else:
                 evidence = "Search-word match" if query_reference else ""
-            passage = {"chunk_id": chunk_id, "snippet": item["snippet"], "evidence": evidence}
+            passage = {"anchor": item["anchor"], "chunk_id": chunk_id, "snippet": item["snippet"], "evidence": evidence}
             passage["books"] = sorted({ref.rsplit(" ", 1)[0] for ref in refs})
             if item.get("related_hits"):
                 passage["evidence"] = "Related wording: " + ", ".join(item["related_hits"])

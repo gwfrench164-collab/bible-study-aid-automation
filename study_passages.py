@@ -116,7 +116,7 @@ def narrow_results(rows, book, course):
                 continue
             key = " ".join(p["snippet"].split())
             if key in canonical and len(key) >= 80:
-                canonical[key]["copies"].append((row["title"], row["path"], p["chunk_id"]))
+                canonical[key]["copies"].append((row["title"], row["path"], p["chunk_id"], p["anchor"]))
             else:
                 passage = dict(p, copies=[])
                 canonical[key] = passage
@@ -227,6 +227,7 @@ def register_shelf(app, qbs):
         path = request.form["path"]
         chunk = request.form.get("chunk", type=int)
         query = request.form.get("q", "")
+        chunk = qbs.resolve_passage_id(path, chunk, request.form.get("anchor", ""))
         with closing(sqlite3.connect(qbs.DB_PATH.as_uri() + "?mode=ro", uri=True)) as index:
             row = index.execute("""SELECT d.title,c.content FROM chunks c JOIN documents d ON d.id=c.document_id
                                   WHERE c.id=? AND d.rel_path=?""", (chunk, path)).fetchone()
@@ -252,7 +253,7 @@ def register_shelf(app, qbs):
                 WHERE d.rel_path=? AND c.content=? ORDER BY (c.id=?) DESC,c.chunk_index LIMIT 1""",
                 (row["path"],row["body"],row["chunk"])).fetchone()
         if found and source_path(row["path"]).is_file():
-            return redirect(url_for("open_source", path=row["path"], chunk=found[0], q=row["query"], shelf=key, study=request.args.get("study",type=int), find=request.args.get("find") or None))
+            return redirect(url_for("open_source", path=row["path"], chunk=found[0], anchor=qbs.passage_anchor(row["body"]), q=row["query"], shelf=key, study=request.args.get("study",type=int), find=request.args.get("find") or None))
         return render_template_string("""<a href="/saved">Saved passages</a><h1>{{ row.title }}</h1>
             <p>The original passage is unavailable. Here is your saved copy.</p>
             <article style="white-space:pre-wrap;max-width:70ch;font:19px/1.6 Georgia">{{ row.body }}</article>""", row=row)

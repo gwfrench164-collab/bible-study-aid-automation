@@ -455,14 +455,14 @@ PAGE_TEMPLATE = """
                         {% if loop.index == 2 %}<details id="more-{{ item.passages[0].chunk_id }}"><summary>Show {{ loop.length - 1 }} more {{ 'passage' if loop.length == 2 else 'passages' }}</summary>{% endif %}
                         <div data-passage>{% if passage.evidence %}<small>{{ passage.evidence }}</small>{% endif %}
                         <div class="snippet" data-excerpt>{{ passage.snippet | safe }}</div>
-                        <a id="hit-{{ passage.chunk_id }}" class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, page=page) }}">Read this passage</a>
+                        <a id="hit-{{ passage.chunk_id }}" class="result-link" href="{{ url_for('open_source', path=item.path, chunk=passage.chunk_id, anchor=passage.anchor, q=query, source_types=selected_source_types, mode=search_mode, limit=limit, sort=sort, related=related, book=book, course=course, page=page) }}">Read this passage</a>
                         <button type="button" data-copy="{{ source_line(item.title,item.path) }}">Copy excerpt with source</button> <span role="status"></span>
                         <form method="post" action="/saved" style="display:inline">
-                        <input type="hidden" name="path" value="{{ item.path }}"><input type="hidden" name="chunk" value="{{ passage.chunk_id }}">
+                        <input type="hidden" name="path" value="{{ item.path }}"><input type="hidden" name="chunk" value="{{ passage.chunk_id }}"><input type="hidden" name="anchor" value="{{ passage.anchor }}">
                         <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="related" value="{{ related }}">
                         <input type="hidden" name="mode" value="{{ search_mode }}"><button>Save passage</button></form>
                         {% if passage.copies %}<details id="copies-{{ passage.chunk_id }}"><summary>View other copies ({{ passage.copies|length }})</summary>
-                        {% for title,path,chunk in passage.copies %}<p><a id="hit-{{ chunk }}" href="{{ url_for('open_source', path=path, chunk=chunk, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course, page=page) }}">{{ title }}</a></p>{% endfor %}
+                        {% for title,path,chunk,anchor in passage.copies %}<p><a id="hit-{{ chunk }}" href="{{ url_for('open_source', path=path, chunk=chunk, anchor=anchor, q=query, mode=search_mode, source_types=selected_source_types, sort=sort, limit=limit, related=related, book=book, course=course, page=page) }}">{{ title }}</a></p>{% endfor %}
                         </details>{% endif %}
                         </div>{% if loop.last and loop.length > 1 %}</details>{% endif %}
                         {% endfor %}
@@ -849,11 +849,14 @@ def open_source():
     if shelf_key:
         return_args.extend((k, request.args[k]) for k in ("shelf","study","find") if k in request.args)
     action_args = urlencode(return_args + [("path", rel_path)])
+    anchor = request.args.get("anchor", "")
+    if chunk_id is not None:
+        chunk_id = qbs.resolve_passage_id(rel_path, chunk_id, anchor)
     context = qbs.read_passage(rel_path, chunk_id) if chunk_id is not None else []
     if "chunk" in request.args and not context:
         abort(404, "This passage has changed. Search again to refresh the results.")
     if context:
-        action_args += "&" + urlencode({"chunk": chunk_id})
+        action_args += "&" + urlencode({"chunk": chunk_id, "anchor": anchor})
     if request.args.get("native") == "1":
         if (not context and not full_path.is_relative_to(BASE.resolve())) or not full_path.is_file():
             abort(404)
@@ -890,7 +893,7 @@ def open_source():
 
         save_control = ""
         if context:
-            fields = {"path": rel_path, "chunk": str(chunk_id), "q": query,
+            fields = {"path": rel_path, "chunk": str(chunk_id), "anchor": anchor, "q": query,
                       "mode": search_mode, "related": request.args.get("related", "on")}
             inputs = "".join(f'<input type="hidden" name="{key}" value="{escape(value, quote=True)}">'
                              for key, value in fields.items())
