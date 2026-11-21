@@ -203,8 +203,8 @@
       "tries": 1
     },
     "55228": {
-      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/55228/pg55228.txt', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpf6g49cga/']' returned non-zero exit status 1.",
-      "tries": 1
+      "status": "Indexed",
+      "tries": 2
     },
     "55743": {
       "status": "Indexed",
@@ -223,73 +223,87 @@
       "tries": 1
     },
     "64392": {
-      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/64392/pg64392.txt', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmp9ten6tpo/']' returned non-zero exit status 1.",
-      "tries": 1
+      "status": "Indexed",
+      "tries": 2
     },
     "65688": {
-      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/65688/pg65688.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpb7ems2jn/']' returned non-zero exit status 1.",
-      "tries": 1
+      "status": "Indexed",
+      "tries": 2
     },
     "68976": {
-      "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/68976/pg68976.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmpgk6y_392/']' returned non-zero exit status 1.",
-      "tries": 1
+      "status": "Indexed",
+      "tries": 2
     },
     "70258": {
       "status": "Pending retry: Command '['/usr/bin/rsync', '--contimeout=10', '--timeout=30', 'gutenberg.pglaf.org::gutenberg-epub/70258/pg70258.rdf', '/var/folders/69/gp7y9_k11kl73y_yq6xgrhsh0000gn/T/tmphe_y96lu/']' returned non-zero exit status 1.",
       "tries": 1
     },
     "70561": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "70693": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "71140": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "73012": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "73032": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "73267": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "73271": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "75892": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "76305": {
-      "status": "Collected for indexing",
-      "tries": 1
+      "status": "Indexed"
     },
     "76774": {
-      "status": "Collected for indexing",
+      "status": "Indexed"
+    },
+    "77034": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "77041": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "77576": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "77585": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "79723": {
+      "status": "Indexed",
+      "tries": 1
+    },
+    "79727": {
+      "status": "Indexed",
       "tries": 1
     }
   },
-  "day": "2026-11-20",
+  "day": "2026-11-21",
   "attempted": [
-    70561,
-    70693,
-    71140,
-    73012,
-    73032,
-    73267,
-    73271,
-    75892,
-    76305,
-    76774
+    77034,
+    77041,
+    77576,
+    77585,
+    79723,
+    79727,
+    55228,
+    64392,
+    65688,
+    68976
   ]
 }
