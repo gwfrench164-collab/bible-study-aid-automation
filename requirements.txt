@@ -1,0 +1,25 @@
+# Python packages Bible Study Aid needs.
+# Install with:  python3 -m pip install -r requirements.txt
+#
+# Versions are not pinned yet. To record the exact versions that work on your Mac,
+# run `python3 -m pip freeze` there and replace the names below with its output.
+
+# Search app (browser window and desktop window)
+flask
+PySide6            # desktop window (bible_study_desktop_app.py)
+pywebview          # alternative desktop window (bible_study_search_app.py)
+
+# Reading documents when indexing
+PyMuPDF            # PDF text (imported as "fitz")
+pypdf
+pdfminer.six
+
+# Downloading and importing
+requests
+beautifulsoup4
+yt-dlp
+
+# Speech recognition for podcasts and sermons without captions
+openai-whisper
+# mlx-whisper      # optional, Apple-silicon speed-up; the updater expects it in its own
+#                  # virtual environment (see BIBLE_STUDY_MLX_PYTHON in README.md)
