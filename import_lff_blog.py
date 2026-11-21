@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 import hashlib
 from pipeline_support import atomic_write_text
+from library_settings import LIBRARY_ROOT
 import re
 import hashlib
 import requests
@@ -9,7 +10,7 @@ from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.lffellowship.com"
 BLOG_URL = "https://www.lffellowship.com/blog"
-DEST = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid/06_Blogs/Living_Faith_Fellowship")
+DEST = LIBRARY_ROOT / "06_Blogs" / "Living_Faith_Fellowship"
 
 HEADERS = {
     "User-Agent": "BibleStudyAid/1.0"

@@ -10,8 +10,10 @@ import subprocess
 import json
 import os
 from pipeline_support import atomic_write_text
+from library_settings import LIBRARY_ROOT
+from bible_refs import BOOK_PATTERNS, extract_references
 
-BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
+BASE = LIBRARY_ROOT  # set BIBLE_STUDY_LIBRARY_ROOT to use a different library folder
 DB_PATH = BASE / "99_Index" / "bible_study.db"
 SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
 LFF_CHURCH_REGISTRY = Path(__file__).with_name("lff_church_sources.tsv")
@@ -83,44 +85,6 @@ SEARCH_SOURCES = LOCAL_SOURCES + load_lff_church_sources() + [
 ]
 
 READABLE_SUFFIXES = {".txt", ".md", ".rtf", ".pdf", ".docx", ".pptx", ".xlsx", ".pages"}
-
-BOOK_PATTERNS = [
-    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
-    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
-    "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
-    "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
-    "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel",
-    "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
-    "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John",
-    "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians",
-    "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
-    "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon",
-    "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John",
-    "3 John", "Jude", "Revelation"
-]
-
-BOOK_REGEX = "|".join(re.escape(book) for book in BOOK_PATTERNS)
-REFERENCE_REGEX = re.compile(
-    rf"\b({BOOK_REGEX})\s+(\d+)(?::(\d+(?:-\d+)?))?\b",
-    re.IGNORECASE,
-)
-
-
-def normalize_book_name(book: str) -> str:
-    for b in BOOK_PATTERNS:
-        if b.lower() == book.lower():
-            return b
-    return book
-
-
-def normalize_reference(match: re.Match) -> str:
-    book = normalize_book_name(match.group(1))
-    chapter = match.group(2)
-    verse = match.group(3)
-    if verse:
-        return f"{book} {chapter}:{verse}"
-    return f"{book} {chapter}"
-
 
 def guess_source_type(path: Path) -> str:
     resolved_path = path.resolve()
@@ -411,13 +375,6 @@ def split_into_chunks(text: str, chunk_size: int = 1800, overlap: int = 250) -> 
     return chunks
 
 
-def extract_references(text: str) -> list[str]:
-    refs = set()
-    for match in REFERENCE_REGEX.finditer(text):
-        refs.add(normalize_reference(match))
-    return sorted(refs)
-
-
 def init_db(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA foreign_keys=ON;")
     conn.execute("PRAGMA busy_timeout=30000;")
@@ -588,6 +545,14 @@ def main() -> None:
         from repair_search_index import repair
         if repair(conn):
             print("Repaired full-text index from stored chunks; source files were not reopened.", flush=True)
+        # One-time: refresh stored Bible references with the improved finder.
+        # Resumable; reads only the text already stored in the database.
+        from backfill_references import refresh as refresh_references
+        reference_stats = refresh_references(conn)
+        if reference_stats:
+            print("Refreshed Bible references in indexed text: "
+                  f"{reference_stats['passages_changed']} of {reference_stats['passages_checked']} passages changed"
+                  + ("" if reference_stats["finished"] else " (will continue next update)"), flush=True)
 
         files = collect_files()
         valid_rel_paths = {get_rel_path(path) for path in files}

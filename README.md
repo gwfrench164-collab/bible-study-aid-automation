@@ -177,3 +177,13 @@ These are kept for reference but should not be treated as the main active pipeli
 - Retired copy/rebuild/pilot entry points refuse execution but remain available as reference source.
 
 The audit report in the task workspace records remaining limitations and regression tests. Do not treat a source's download archive as proof that its transcript exists, or a historical `Update complete.` log as proof that every download succeeded.
+
+## November 2026 first fixes
+
+See `ISSUES.md` for the full list of known issues and what is still open.
+
+- `bible_refs.py` is the one place that knows Bible book names, abbreviations and how to find references in text. It now recognizes forms such as "Rom. 8:28", "Ps 23" and "Psalm 119".
+- The next update refreshes the references already stored for indexed material (`backfill_references.py`). It reads only text already in the database, saves its place, and runs once. To preview its effect first: `python3 backfill_references.py <path to bible_study.db>`.
+- `local_guard.py` protects the local web app: only indexed files can be opened or revealed, and requests from other websites are refused. To let a phone reach the app later, list its address in `BIBLE_STUDY_ALLOWED_HOSTS`.
+- `requirements.txt` lists the Python packages needed.
+- Run every test with `python3 -m unittest discover -p "test_*.py"`.

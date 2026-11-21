@@ -4,9 +4,10 @@ import sys
 import sqlite3
 import io
 from pipeline_support import atomic_write_text
+from library_settings import LIBRARY_ROOT
 from collections import defaultdict, Counter
 
-BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
+BASE = LIBRARY_ROOT  # set BIBLE_STUDY_LIBRARY_ROOT to use a different library folder
 INDEX_DIR = BASE / "99_Index"
 INDEX_FILE = INDEX_DIR / "scripture_index.txt"
 
@@ -18,38 +19,7 @@ SEARCH_FOLDERS = [
     BASE / "06_Blogs",
 ]
 
-BOOK_PATTERNS = [
-    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
-    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
-    "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
-    "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
-    "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel",
-    "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
-    "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John",
-    "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians",
-    "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
-    "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon",
-    "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John",
-    "3 John", "Jude", "Revelation"
-]
-
-BOOK_CHAPTER_LIMITS = {
-    "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36, "Deuteronomy": 34,
-    "Joshua": 24, "Judges": 21, "Ruth": 4, "1 Samuel": 31, "2 Samuel": 24,
-    "1 Kings": 22, "2 Kings": 25, "1 Chronicles": 29, "2 Chronicles": 36,
-    "Ezra": 10, "Nehemiah": 13, "Esther": 10, "Job": 42, "Psalms": 150,
-    "Proverbs": 31, "Ecclesiastes": 12, "Song of Solomon": 8, "Isaiah": 66,
-    "Jeremiah": 52, "Lamentations": 5, "Ezekiel": 48, "Daniel": 12,
-    "Hosea": 14, "Joel": 3, "Amos": 9, "Obadiah": 1, "Jonah": 4, "Micah": 7,
-    "Nahum": 3, "Habakkuk": 3, "Zephaniah": 3, "Haggai": 2, "Zechariah": 14,
-    "Malachi": 4, "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21,
-    "Acts": 28, "Romans": 16, "1 Corinthians": 16, "2 Corinthians": 13,
-    "Galatians": 6, "Ephesians": 6, "Philippians": 4, "Colossians": 4,
-    "1 Thessalonians": 5, "2 Thessalonians": 3, "1 Timothy": 6, "2 Timothy": 4,
-    "Titus": 3, "Philemon": 1, "Hebrews": 13, "James": 5, "1 Peter": 5,
-    "2 Peter": 3, "1 John": 5, "2 John": 1, "3 John": 1, "Jude": 1,
-    "Revelation": 22,
-}
+from bible_refs import BOOK_PATTERNS, BOOK_CHAPTER_LIMITS, ABBREVIATION_MAP
 
 BOOK_ORDER = {book: i for i, book in enumerate(BOOK_PATTERNS)}
 BOOK_REGEX = "|".join(re.escape(book) for book in BOOK_PATTERNS)
@@ -59,98 +29,6 @@ QUERY_REFERENCE_REGEX = re.compile(
     r"\b((?:[1-3]\s+)?[A-Za-z]+(?:\s+[A-Za-z]+)?)\s+(\d+)(?::(\d+(?:-\d+)?))?\b",
     re.IGNORECASE,
 )
-
-ABBREVIATION_MAP = {
-    "gen": "Genesis",
-    "ge": "Genesis",
-    "exo": "Exodus",
-    "ex": "Exodus",
-    "lev": "Leviticus",
-    "le": "Leviticus",
-    "num": "Numbers",
-    "nu": "Numbers",
-    "deut": "Deuteronomy",
-    "deu": "Deuteronomy",
-    "josh": "Joshua",
-    "jos": "Joshua",
-    "judg": "Judges",
-    "jdg": "Judges",
-    "ruth": "Ruth",
-    "1 sam": "1 Samuel",
-    "2 sam": "2 Samuel",
-    "1 kgs": "1 Kings",
-    "2 kgs": "2 Kings",
-    "1 chr": "1 Chronicles",
-    "2 chr": "2 Chronicles",
-    "ezra": "Ezra",
-    "neh": "Nehemiah",
-    "ne": "Nehemiah",
-    "est": "Esther",
-    "job": "Job",
-    "ps": "Psalms",
-    "psa": "Psalms",
-    "prov": "Proverbs",
-    "pro": "Proverbs",
-    "eccl": "Ecclesiastes",
-    "ecc": "Ecclesiastes",
-    "song": "Song of Solomon",
-    "isa": "Isaiah",
-    "jer": "Jeremiah",
-    "lam": "Lamentations",
-    "ezek": "Ezekiel",
-    "eze": "Ezekiel",
-    "dan": "Daniel",
-    "hos": "Hosea",
-    "joe": "Joel",
-    "amos": "Amos",
-    "obad": "Obadiah",
-    "jon": "Jonah",
-    "mic": "Micah",
-    "nah": "Nahum",
-    "hab": "Habakkuk",
-    "zeph": "Zephaniah",
-    "hag": "Haggai",
-    "zech": "Zechariah",
-    "mal": "Malachi",
-    "matt": "Matthew",
-    "mt": "Matthew",
-    "mk": "Mark",
-    "mrk": "Mark",
-    "mark": "Mark",
-    "lk": "Luke",
-    "lu": "Luke",
-    "jn": "John",
-    "joh": "John",
-    "acts": "Acts",
-    "act": "Acts",
-    "rom": "Romans",
-    "ro": "Romans",
-    "1 cor": "1 Corinthians",
-    "2 cor": "2 Corinthians",
-    "gal": "Galatians",
-    "eph": "Ephesians",
-    "phil": "Philippians",
-    "php": "Philippians",
-    "col": "Colossians",
-    "1 thess": "1 Thessalonians",
-    "2 thess": "2 Thessalonians",
-    "1 tim": "1 Timothy",
-    "2 tim": "2 Timothy",
-    "tit": "Titus",
-    "philem": "Philemon",
-    "phm": "Philemon",
-    "heb": "Hebrews",
-    "jas": "James",
-    "jam": "James",
-    "1 pet": "1 Peter",
-    "2 pet": "2 Peter",
-    "1 jn": "1 John",
-    "2 jn": "2 John",
-    "3 jn": "3 John",
-    "jude": "Jude",
-    "rev": "Revelation",
-    "re": "Revelation",
-}
 
 READABLE_SUFFIXES = {".txt", ".md", ".rtf"}
 
@@ -228,34 +106,12 @@ def extract_query_reference(query: str):
 
 
 def parse_reference(ref: str):
-    parts = ref.split(" ", 1)
-    book = parts[0]
-    rest = parts[1] if len(parts) > 1 else ""
-
-    if book in {"1", "2", "3"} and rest:
-        parts2 = rest.split(" ", 1)
-        book = f"{book} {parts2[0]}"
-        rest = parts2[1] if len(parts2) > 1 else ""
-
-    if ":" in rest:
-        chapter_str, verse_str = rest.split(":", 1)
-    else:
-        chapter_str, verse_str = rest, ""
-
-    try:
-        chapter_num = int(chapter_str)
-    except ValueError:
-        chapter_num = 999
-
-    verse_num = 0
-    if verse_str:
-        first_verse = verse_str.split("-", 1)[0]
-        try:
-            verse_num = int(first_verse)
-        except ValueError:
-            verse_num = 0
-
-    return BOOK_ORDER.get(book, 999), chapter_num, verse_num, ref
+    """Sort key for a stored reference such as 'Song of Solomon 2:1' or '1 John 3:16-18'."""
+    match = re.match(r"^(.+?)\s+(\d+)(?::(\d+))?", ref)
+    if not match:
+        return 999, 999, 0, ref
+    book, chapter, verse = match.groups()
+    return BOOK_ORDER.get(book, 999), int(chapter), int(verse or 0), ref
 
 
 def scan_file(path: Path):
