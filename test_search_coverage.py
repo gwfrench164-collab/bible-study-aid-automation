@@ -67,6 +67,15 @@ class SearchCoverageTests(unittest.TestCase):
         for title in ('Origen - Writings', 'Augustine of Hippo - Confessions', 'John Calvin - Institutes'):
             self.assertTrue(search.excluded_author(title, '/Reference/work.txt'))
 
+    def test_preferred_collection_is_visible_without_filters(self):
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("UPDATE documents SET title='Week+5-8', rel_path='/Reference/52 weeks of pursuit/Week+5-8.pdf' WHERE id=130")
+        rows = search.run_query('resurrection')
+        self.assertTrue(rows[0]['preferred_source'])
+        self.assertEqual(rows[0]['title'], '52 Weeks of Pursuit — Week 5-8')
+        self.assertEqual(search.run_query('Romans 8:28 resurrection')[0]['title'], 'Lesson 131')
+        self.assertEqual(search.run_query('nonexistentword'), [])
+
     def test_abbreviations_and_modes(self):
         self.assertEqual(search.extract_query_reference("Explain 1 Cor. 15:3–4"), "1 Corinthians 15:3-4")
         self.assertEqual(search.extract_query_reference("Rom. 8:28"), "Romans 8:28")

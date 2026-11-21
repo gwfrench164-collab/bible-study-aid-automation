@@ -451,6 +451,7 @@ PAGE_TEMPLATE = """
                         <div class="result-top">
                             <div>
                                 <div class="result-title">{{ item.highlighted_title | safe }}</div>
+                                {% if item.preferred_source %}<span class="badge">Preferred source</span>{% endif %}
                                 <div class="badges">
                                     {% if sort == "library" %}<span class="badge">{{ source_label(item.source_type) }}</span>{% endif %}
                                     <span class="badge">{{ item.format }}</span>

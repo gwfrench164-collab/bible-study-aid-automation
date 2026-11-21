@@ -564,6 +564,16 @@ def run_query(query: str, limit: int = 20, source_types=None, search_mode: str =
                     item["score"] += 300000
                 elif any(":" in ref and references_overlap(query_reference, ref) for ref in refs):
                     item["score"] += 200000
+        # Promote the user's frequently used collection without overriding
+        # the much larger bonuses for exact Scripture-reference matches.
+        for item in results:
+            if re.search(r"\b52[ _+]+weeks[ _+]+of[ _+]+pursuit\b", item["path"], re.I):
+                item["score"] += 5000
+                item["preferred_source"] = True
+                if "52 weeks of pursuit" not in item["title"].casefold():
+                    section = item["title"].replace("+", " ").replace("_", " ").strip()
+                    section = re.sub(r"^\d{3}-", "", section)
+                    item["title"] = "52 Weeks of Pursuit — " + section
         sources = {}
         seen_chunks = set()
         for item in sorted(results, key=lambda x: (-x["score"], x["path"], x["chunk_id"])):
