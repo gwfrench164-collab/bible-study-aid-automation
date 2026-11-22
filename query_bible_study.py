@@ -112,28 +112,45 @@ def focus_words(query):
     return list(dict.fromkeys(words))
 
 
+@lru_cache(maxsize=32)
+def _focus_pattern(words):
+    return re.compile(r"\b(?:" + "|".join(map(re.escape, words)) + r")\b", re.I)
+
+
+@lru_cache(maxsize=32)
+def _passage_focus_cached(text, words):
+    return _passage_focus(text, words)
+
+
 def passage_focus(text, words):
-    """Prefer distinct terms occurring together within a readable excerpt."""
+    """Prefer distinct terms occurring together within a readable excerpt.
+
+    Scoring a result and building its snippet both ask for this on the same
+    passage, so the answer is remembered briefly instead of worked out twice.
+    """
     if not words:
         return 0, None
-    pattern = r"\b(?:" + "|".join(map(re.escape, words)) + r")\b"
-    hits = list(re.finditer(pattern, text, re.I))
+    return _passage_focus_cached(text, tuple(words))
+
+
+def _passage_focus(text, words):
+    found = [(hit.start(), hit.group().lower()) for hit in _focus_pattern(words).finditer(text)]
     counts = {}
     left = 0
     best_score, position = 0, None
-    for hit in hits:
-        word = hit.group().lower()
+    for start, word in found:
         counts[word] = counts.get(word, 0) + 1
-        while hit.start() - hits[left].start() > 200 or counts[hits[left].group().lower()] > 1:
-            first = hits[left].group().lower()
+        left_start, first = found[left]
+        while start - left_start > 200 or counts[first] > 1:
             counts[first] -= 1
             if not counts[first]:
                 del counts[first]
             left += 1
-        span = hit.start() - hits[left].start()
+            left_start, first = found[left]
+        span = start - left_start
         score = 120 * len(counts) + (max(0, 80 - span // 3) if len(counts) > 1 else 0)
         if score > best_score:
-            best_score, position = score, hits[left].start()
+            best_score, position = score, left_start
     return best_score, position
 
 

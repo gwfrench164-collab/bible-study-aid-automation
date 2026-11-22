@@ -33,7 +33,7 @@ blogs, commentaries) from both your computer and your phone. Group **P** is that
 
 | ID | Sev | Issue | Why it matters | Status |
 |---|---|---|---|---|
-| Q1 | High | Every matching passage is pulled out of the database and scored one at a time, with no cap. | A common word ("God", "love") will get slower as the library grows. | Open |
+| Q1 | High | Every matching passage is pulled out of the database and scored one at a time, with no cap. | A common word ("God", "love") will get slower as the library grows. Measured on made-up test libraries: a broad three-word search took about 2.5 seconds at 20,000 passages and about 12 seconds at 100,000. Real text is less repetitive, so real searches should be faster, but the time still grows in step with the library. | **Partly**: the scoring work was trimmed (about 25-30% faster, results proven identical on thousands of test cases). The remaining cost needs a decision: scoring only the best few thousand matches would make searches fast at any size, but the result counts shown in the page would become approximate. |
 | Q2 | Med | Search understands word forms (love/loved/loving) but highlighting does not. | Matches look like they have nothing highlighted. | Open |
 | Q3 | Med | Topic searches ("7 feasts of Israel" etc.) work for only five topics typed into the code. | A real topical index (Nave's) would cover every topic. | Open |
 | Q4 | Med | Ranking uses hand-tuned bonus numbers and there is no way to tell whether a change made searches better or worse. | Easy to break good results by accident. Needs a small list of your real searches with the results you expect. | Open |
