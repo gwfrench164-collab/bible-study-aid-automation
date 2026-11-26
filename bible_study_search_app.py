@@ -2,6 +2,8 @@ from pathlib import Path
 import sys
 import subprocess
 import re
+import sqlite3
+from contextlib import closing
 import threading
 import time
 import webbrowser
@@ -19,6 +21,8 @@ from source_preferences import set_preferred
 from study_passages import COPY_SCRIPT, narrow_results, register_shelf, source_line
 
 app = Flask(__name__)
+from local_guard import register_guard
+register_guard(app)
 register_shelf(app, qbs)
 from source_management import register_management
 register_management(app, qbs)
@@ -652,6 +656,17 @@ def add_result_context(results):
     return enriched
 
 
+def require_indexed(rel_path: str) -> None:
+    """Only files that are part of the library index may be opened or revealed."""
+    try:
+        with closing(sqlite3.connect(qbs.DB_PATH.as_uri() + "?mode=ro", uri=True)) as db:
+            found = db.execute("SELECT 1 FROM documents WHERE rel_path=?", (rel_path,)).fetchone()
+    except sqlite3.Error:
+        found = None
+    if not found:
+        abort(404, "That file is not part of your library index.")
+
+
 def resolve_result_path(stored_path: str) -> Path:
     candidate = source_path(stored_path)
     if not candidate.exists():
@@ -842,6 +857,7 @@ def reveal_in_finder():
     rel_path = request.args.get("path", "").strip()
     if not rel_path:
         abort(400)
+    require_indexed(rel_path)
     try:
         full_path = resolve_result_path(rel_path)
     except FileNotFoundError as e:
@@ -869,6 +885,7 @@ def open_source():
     rel_path = request.args.get("path", "").strip()
     if not rel_path:
         abort(400)
+    require_indexed(rel_path)
     try:
         full_path = resolve_result_path(rel_path)
     except FileNotFoundError as e:
