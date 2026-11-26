@@ -70,6 +70,8 @@ blogs, commentaries) from both your computer and your phone. Group **P** is that
 | O5 | Low | Files that disappear are never removed from the index (a deliberate safety choice). | Deleted or renamed material still shows up in results. Needs an explicit "clean up" tool. | Open |
 | O6 | Low | Two overlapping source lists (`sources.txt` and `podcast_sources.tsv`) disagreed. | Confusing; one was out of date. | **Fixed**: the unused `sources.txt` was removed. |
 | O7 | Low | Generated reports in `web_discovery/` (with your local file paths) are saved into the project history. | Clutter and personal details in history. | Open |
+| O8 | Med | Moodle (Microsoft 365 sign-in) downloads using an exported `cookies.txt` have never been shown to work end to end on the real course; the manual `download_queue.html` fallback exists. | LFBI handouts and slides may be missing from the library. Verify one full course (Acts) before adding others. | Open |
+| O9 | Med | The duplicate checker was corrected in code but has not been run against the real Moodle files. | Wrong matches could hide real handouts, or let repeats in. | Open |
 
 ## C. Code organization
 
@@ -124,6 +126,9 @@ have their own terms. Check each source before copying it in.
 | B5 | Nave's Topical Bible | Also replaces the hard-coded topics in Q3. |
 | B6 | Webster's 1828 Dictionary | Look up a word from anywhere in the app. |
 | B7 | Link everything together | A verse shows KJV text, cross-references, your sermon notes, LFBI lessons and podcast passages in one place. |
+| B8 | External authors library (Spurgeon, McGee, Bounds, etc.) | Record only practical details: author, title, source, copyright status. No doctrinal rankings or tiers. Public-domain text only unless permission is obtained. Not started. |
+| B9 | Traceable quotations | Any quotation shown must link to a reliable, preferably primary, source with citation details. Never present unverified popular attributions as established. |
+| B10 | reMarkable tablet (exploratory) | You want to look up and search Scripture on a reMarkable. Whether it can run an interactive search is unverified; static exported pages are the likely fallback. Settle the phone approach (P1) first, then check the tablet's actual abilities before buying anything. |
 
 ---
 
