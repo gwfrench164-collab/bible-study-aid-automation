@@ -3,7 +3,15 @@
 set -u
 
 # A kernel lock survives crashes safely and serializes all current updater runs.
-PYTHON_BIN="${BIBLE_STUDY_PYTHON:-/usr/local/bin/python3.14}"
+if [ -n "${BIBLE_STUDY_PYTHON:-}" ]; then
+    PYTHON_BIN="$BIBLE_STUDY_PYTHON"
+else
+    PYTHON_BIN="$(command -v python3)"
+fi
+if [ ! -x "$PYTHON_BIN" ]; then
+    echo "Python is unavailable; set BIBLE_STUDY_PYTHON to the installed interpreter." >&2
+    exit 2
+fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ "${BIBLE_STUDY_LOCKED:-}" != "1" ]; then
     exec "$PYTHON_BIN" "$SCRIPT_DIR/pipeline_lock.py" "$0" "$@"
@@ -21,7 +29,7 @@ SCRIPTURE_INDEXER="$AUTOMATION_DIR/build_scripture_index.py"
 COVERAGE_REPORTER="$AUTOMATION_DIR/report_library_status.py"
 LFBI_DOWNLOAD_IMPORTER="$AUTOMATION_DIR/import_lfbi_downloads.py"
 TRANSCRIBER="$AUTOMATION_DIR/transcribe_audio_batch.py"
-PYTHON_BIN="${BIBLE_STUDY_PYTHON:-/usr/local/bin/python3.14}"
+export BIBLE_STUDY_PYTHON="$PYTHON_BIN"
 YT_DLP=("$PYTHON_BIN" -m yt_dlp)
 
 MODE="${1:-backlog}"
@@ -98,6 +106,11 @@ emit_selected_sources() {
         cat "$SOURCES_FILE" "$LFF_SOURCES_FILE"
     fi
 }
+
+if ! run_stage "Verified database backup" "$PYTHON_BIN" "$AUTOMATION_DIR/database_backup.py"; then
+    echo "Update stopped before changing the library: backup could not be verified." | tee -a "$LOG_FILE"
+    exit 1
+fi
 
 if [ "$MODE" != "index" ]; then
 echo "========================================" | tee -a "$LOG_FILE"

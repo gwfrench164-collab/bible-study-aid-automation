@@ -1,3 +1,4 @@
+from test_support import client as protected_client
 import unittest
 from unittest.mock import patch
 from bs4 import BeautifulSoup
@@ -11,7 +12,7 @@ class SourceFilterTests(unittest.TestCase):
 
     def test_filter_before_folding_and_keeps_reader_filter(self):
         with patch.object(ui.qbs,'run_query',return_value=self.rows()):
-            response=ui.app.test_client().get('/?q=worship&source_name=52+weeks+pursuit')
+            response=protected_client(ui.app).get('/?q=worship&source_name=52+weeks+pursuit')
         self.assertEqual(response.status_code,200)
         soup=BeautifulSoup(response.data,'html.parser')
         self.assertIn('of 1 sources',soup.get_text())
@@ -24,7 +25,7 @@ class SourceFilterTests(unittest.TestCase):
         for i,row in enumerate(rows):
             row['passages'][0]['snippet']=f'unique passage {i}'
         with patch.object(ui.qbs,'run_query',return_value=rows):
-            response=ui.app.test_client().get('/?q=worship&source_name=Reference&limit=10')
+            response=protected_client(ui.app).get('/?q=worship&source_name=Reference&limit=10')
         soup=BeautifulSoup(response.data,'html.parser')
         self.assertIn('Commentaries: 22',soup.get_text(' ',strip=True))
         self.assertEqual(len(soup.find_all('a',string='Read this passage')),10)

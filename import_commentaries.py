@@ -411,11 +411,7 @@ def split_into_chunks(text: str, chunk_size: int = 1800, overlap: int = 250) -> 
     return chunks
 
 
-def extract_references(text: str) -> list[str]:
-    refs = set()
-    for match in REFERENCE_REGEX.finditer(text):
-        refs.add(normalize_reference(match))
-    return sorted(refs)
+from scripture_references import extract_references
 
 
 def init_db(conn: sqlite3.Connection) -> None:

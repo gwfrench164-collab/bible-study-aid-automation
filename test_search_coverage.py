@@ -1,3 +1,4 @@
+from test_support import client as protected_client
 """Regression coverage for library-wide search and Scripture ranges."""
 from contextlib import closing
 import sqlite3
@@ -59,7 +60,7 @@ class SearchCoverageTests(unittest.TestCase):
         self.assertFalse(search.references_overlap("Romans 9:28","Romans 8:26-30"))
 
     def test_author_opt_in_applies_to_words_and_references(self):
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("UPDATE documents SET title='John Calvin - Institutes' WHERE id=131")
         for query in ('resurrection', 'Romans 8:28'):
             ordinary = search.run_query(query, limit=None)
@@ -72,7 +73,7 @@ class SearchCoverageTests(unittest.TestCase):
             self.assertTrue(search.excluded_author(title, '/Reference/work.txt'))
 
     def test_preferred_collection_is_visible_without_filters(self):
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("UPDATE documents SET title='Week+5-8', rel_path='/Reference/52 weeks of pursuit/Week+5-8.pdf' WHERE id=130")
         rows = search.run_query('resurrection')
         self.assertTrue(rows[0]['preferred_source'])
@@ -85,7 +86,7 @@ class SearchCoverageTests(unittest.TestCase):
         import bible_study_search_app as ui
         path = '02_LFBI/Course_131/lesson.txt'
         original = self.db_path.read_bytes()
-        client = ui.app.test_client()
+        client = protected_client(ui.app)
         response = client.post('/source-preference', data={'path':path, 'enabled':'1', 'return_q':'resurrection', 'return_page':'9'})
         self.assertEqual(response.status_code, 303)
         self.assertNotIn('page=', response.location)
@@ -101,8 +102,8 @@ class SearchCoverageTests(unittest.TestCase):
 
     def test_management_changes_search_preferences_immediately(self):
         import bible_study_search_app as ui
-        client = ui.app.test_client()
-        with sqlite3.connect(self.db_path) as db:
+        client = protected_client(ui.app)
+        with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("UPDATE documents SET title='John Calvin - Institutes' WHERE id=131")
         self.assertEqual(client.get('/preferences').status_code, 200)
         self.assertEqual(client.get('/preferences?find=Lesson').status_code, 200)

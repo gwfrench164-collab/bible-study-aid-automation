@@ -230,23 +230,12 @@ def get_topic_anchor_rules(query: str):
 
 
 def extract_query_reference(query: str):
-    names = {book.lower(): book for book in BOOK_PATTERNS}
-    names.update(ABBREVIATION_MAP)
-    names["psalm"] = "Psalms"
-    pattern = r"(?<!\w)(" + "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
-    pattern += r")\.?\s*(\d+)(?:\s*:\s*(\d+)(?:\s*[-–—]\s*(\d+))?)?(?!\d)"
-    match = re.search(pattern, query, re.I)
-    if not match:
-        return None
-    book, chapter, start, end = match.groups()
-    if int(chapter) < 1 or (start and int(start) < 1) or (end and int(end) < int(start)):
-        return None
-    reference = f"{names[book.lower()]} {int(chapter)}"
-    if start:
-        reference += f":{int(start)}"
-        if end:
-            reference += f"-{int(end)}"
-    return reference
+    from scripture_references import PATTERN, extract_references
+    for match in PATTERN.finditer(query):
+        refs = extract_references(match.group())
+        if refs:
+            return refs[0]
+    return None
 
 
 def references_overlap(left, right):

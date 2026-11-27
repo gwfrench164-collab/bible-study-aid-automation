@@ -19,6 +19,8 @@ from source_preferences import set_preferred
 from study_passages import COPY_SCRIPT, narrow_results, register_shelf, source_line
 
 app = Flask(__name__)
+from local_security import install_security
+install_security(app)
 register_shelf(app, qbs)
 from source_management import register_management
 register_management(app, qbs)
@@ -653,7 +655,19 @@ def add_result_context(results):
 
 
 def resolve_result_path(stored_path: str) -> Path:
+    import sqlite3
+    from contextlib import closing
+    with closing(sqlite3.connect(qbs.DB_PATH.as_uri() + "?mode=ro", uri=True)) as db:
+        if not db.execute("SELECT 1 FROM documents WHERE rel_path=?", (stored_path,)).fetchone():
+            raise FileNotFoundError("Source is not in the library index")
+    unresolved = Path(stored_path)
+    if not unresolved.is_absolute():
+        unresolved = BASE / unresolved
+    if any(part.is_symlink() for part in [unresolved, *unresolved.parents] if str(part) not in {"/tmp", "/var"}):
+        raise FileNotFoundError("Symbolic-link sources are not opened")
     candidate = source_path(stored_path)
+    if candidate.suffix.lower() not in {".txt", ".md", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".pages", ".rtf", ".xlsx"}:
+        raise FileNotFoundError("Unsupported source type")
     if not candidate.exists():
         raise FileNotFoundError(f"Source is unavailable: {candidate}")
     return candidate

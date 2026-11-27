@@ -228,14 +228,7 @@ def extract_query_reference(query: str):
 
 
 def parse_reference(ref: str):
-    parts = ref.split(" ", 1)
-    book = parts[0]
-    rest = parts[1] if len(parts) > 1 else ""
-
-    if book in {"1", "2", "3"} and rest:
-        parts2 = rest.split(" ", 1)
-        book = f"{book} {parts2[0]}"
-        rest = parts2[1] if len(parts2) > 1 else ""
+    book, _, rest = ref.rpartition(" ")
 
     if ":" in rest:
         chapter_str, verse_str = rest.split(":", 1)

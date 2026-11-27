@@ -26,8 +26,8 @@ target = s.LIBRARY_ROOT / '02_LFBI/test.txt'
 target.parent.mkdir(parents=True)
 target.write_text('Study passage')
 old = str(s.LEGACY_LIBRARY_ROOT / '02_LFBI/test.txt')
-assert app.resolve_result_path(old) == target
-assert app.resolve_result_path('02_LFBI/test.txt') == target
+assert s.source_path(old) == target
+assert s.source_path('02_LFBI/test.txt') == target
 assert shelf.source_path(old).is_file()
 assert s.source_path('/external/source.txt') == s.Path('/external/source.txt')
 for bad in ('../escape.txt', ''):

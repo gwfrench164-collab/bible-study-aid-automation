@@ -1,3 +1,4 @@
+from test_support import client as protected_client
 from contextlib import closing
 import sqlite3
 import unittest
@@ -27,7 +28,7 @@ class PassageLinksTests(unittest.TestCase):
             with patch.object(search,"DB_PATH",index), patch.object(shelf,"SAVED",root/"saved.sqlite"):
                 anchor=search.passage_anchor(source.read_text())
                 args=dict(path=str(source),chunk=7,anchor=anchor,q="hope")
-                client=ui.app.test_client()
+                client=protected_client(ui.app)
                 self.assertEqual(client.get("/open",query_string=args).status_code,200)
                 with closing(sqlite3.connect(index)) as db, db:
                     db.execute("UPDATE chunks SET id=19")

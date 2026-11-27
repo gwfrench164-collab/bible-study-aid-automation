@@ -21,5 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('database',type=Path)
     args=parser.parse_args()
     if not args.database.is_file():parser.error('database does not exist')
+    from database_backup import backup_database
+    backup_database(args.database, Path.home()/'Library/Application Support/Bible Study Aid/backups')
     with sqlite3.connect(args.database) as conn:
         print('FTS rebuilt from stored chunks.' if repair(conn) else 'FTS repair already applied.')

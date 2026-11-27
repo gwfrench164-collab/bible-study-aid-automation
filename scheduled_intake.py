@@ -99,6 +99,12 @@ def run_lane(lane, log, fd, env):
             print('Acquisition paused: less than 20 GiB free on the library volume.', file=log, flush=True)
             return [75]
         return [run_command(['/bin/bash', str(AUTOMATION / 'update_bible_study_aid.sh'), 'backlog', '5', 'all'], log, fd, 7200, env)]
+    from database_backup import ensure_backup
+    try:
+        print('Verified backup: ' + str(ensure_backup()), file=log, flush=True)
+    except Exception as exc:
+        print(f'Update stopped before indexing: backup failed: {exc}', file=log, flush=True)
+        return [1]
     results = []
     for script, timeout in [('import_lfbi_downloads.py', 600), ('import_commentaries.py', 1800),
                             ('build_scripture_index.py', 300), ('report_library_status.py', 300)]:
