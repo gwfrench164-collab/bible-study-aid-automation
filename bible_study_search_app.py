@@ -24,6 +24,8 @@ install_security(app)
 register_shelf(app, qbs)
 from source_management import register_management
 register_management(app, qbs)
+from intake_health import register_health
+register_health(app, qbs)
 
 PAGE_TEMPLATE = """
 <!doctype html>
@@ -367,7 +369,7 @@ PAGE_TEMPLATE = """
 <body>
     <div class="page">
         <div class="header">
-            <h1>Bible Study Aid</h1><a href="/saved">Saved passages</a> · <a href="/preferences">Manage sources</a>
+            <h1>Bible Study Aid</h1><a href="/saved">Saved passages</a> · <a href="/preferences">Manage sources</a> · <a href="/intake-status">Update status</a>
             <p>Search your local library by passage, phrase, or Bible-study topic.</p>
         </div>
 

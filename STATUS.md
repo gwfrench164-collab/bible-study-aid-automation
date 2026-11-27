@@ -27,8 +27,12 @@
 - Deployment and final verification results are appended below after execution.
 
 ## Verification results
-- 25 regression tests passed; shell syntax check passed; packaged app built and signature verified.
+- 26 regression tests passed; shell syntax check passed; packaged app built and signature verified.
 - Verified SQLite backup created before maintenance at `~/Library/Application Support/Bible Study Aid/backups/library-20261127.sqlite` (subsequent snapshots use database-specific names).
 - Locked reference-only rebuild completed: 114,358 rows. Original files, chunk text and FTS data were not rebuilt.
 - Live search and protected reader returned HTTP 200 in the staged app; session tokens are present on links.
-- Full macOS UI end-to-end security interaction and CI execution on GitHub remain to verify after deployment; unit tests do not substitute for those checks.
+- The initial 25-test suite also passed on GitHub Actions (run 46082681039). Full macOS UI end-to-end security interaction remains to verify after restarting the installed app.
+
+- Installed the rebuilt app with a rollback copy retained in Applications. Live post-rebuild quick_check was ok; a Jude 3 query returned 275 matching sources (broad mode, not all exact verse citations).
+- Added an Update status page for scheduled intake and per-source failures. Current saved state reports local/acquisition failures: latest index report has one empty transcript; acquisition logs include provider download failures. These underlying acquisition errors remain open, not silently reclassified as success.
+- Core milestone commit: c55c91e; original generated discovery updates separately committed as 040ab90. Both verified pushed before the health-page follow-up.

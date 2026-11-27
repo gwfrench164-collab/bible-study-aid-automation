@@ -5,6 +5,7 @@ Updated November 27, 2026. Original review is preserved below. Its “every item
 | Review IDs | Verified status |
 |---|---|
 | S1–S3 | Implemented: indexed supported-file allowlist, symlink rejection, per-session tokens for file actions and mutations, origin/fetch-site checks, strict loopback Host validation. Covered by regression tests. Not remote authentication. |
+| O2 | Implemented read-only Update status page showing lane outcomes and per-source extraction failures. Full stage-by-stage reasons and remediation remain open. |
 | O3 | Removed fixed Python version; explicit override or PATH interpreter. Dependency availability remains an operational prerequisite. |
 | O4 / H5 | Repository tests now cover backup/WAL, timeout, retries, incremental preservation, Moodle assessment exclusion, security, references and existing UI behavior; CI workflow added. Lock contention and real sleep/iCloud behavior remain to test. |
 | B1 / B2 / B3 | Index extraction supports common abbreviations, singular Psalm, Roman numeral books, long-dash verse ranges, single-chapter verses and chapter limits. Multi-word Scripture report grouping fixed. Per-book verse limits and ambiguous prose need more work. |

@@ -17,6 +17,12 @@ class ReliabilityTests(unittest.TestCase):
                 self.assertEqual(backup_database(source,root/'backups'), destination)
                 self.assertEqual(db.execute('SELECT count(*) FROM notes').fetchone(),(1,))
 
+    def test_health_report_preserves_partial_failure_uncertainty(self):
+        from intake_health import describe
+        self.assertIn('not fully up to date', describe({'status':'needs_attention'}))
+        self.assertIn('may still',describe({'status':'running'}))
+        self.assertIn('No scheduled run',describe({}))
+
     def test_retry_backoff_and_recovery(self):
         record={'lane':'local'}
         for delay in (900,1800,3600,3600):
