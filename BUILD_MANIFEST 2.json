@@ -1,0 +1,14 @@
+{
+  "built_on": "2026-11-27",
+  "source_sha256": {
+    "bible_study_search_app.py": "19d2fcb2db7500197e66466ca54b30db5143077ee4198a1abbe8f214184d6dcd",
+    "local_security.py": "5631e6eb3b7c59b937fe7b318f6d029e3cafac5b869427c51970642fd386a3a9",
+    "query_bible_study.py": "f1193432f6fc8fb90332688ae1dea68e68f2d38aaf0e0c4e331681877a7c86a1",
+    "scripture_references.py": "35c731e830b1546fbf67d5732fbd522a6af7584b91018fcc50e8dee2a1134ae0",
+    "import_commentaries.py": "188f5c9db25b4c95f674431cb1f45ca9b911260773e4c06f5f11504f09940642",
+    "database_backup.py": "3ef466dc2ed37e82f255b3561c6e8bbc478a6f909226956e505176554ba6410b",
+    "scheduled_intake.py": "a28525c7786bb83f2d741807c6595badbefe54256d98919d6b82db8d4fccd4dc",
+    "update_bible_study_aid.sh": "239d47d7c1cfed0b5bdd69924e80cc12c8b91b67413a70c1571c56437a5a62ae",
+    "intake_health.py": "485db596c3d109bce7182edf41a346753a222c7889350562eeb80a25e4c16fd3"
+  }
+}
