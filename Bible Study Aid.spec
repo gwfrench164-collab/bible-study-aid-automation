@@ -5,7 +5,7 @@ a = Analysis(
     ['bible_study_search_app.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[("BUILD_MANIFEST.json", ".")],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

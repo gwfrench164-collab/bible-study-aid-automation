@@ -11,8 +11,7 @@ import json
 import os
 from pipeline_support import atomic_write_text
 
-BASE = Path("/Users/george/Library/Mobile Documents/com~apple~CloudDocs/Bible_Study_Aid")
-DB_PATH = BASE / "99_Index" / "bible_study.db"
+from library_settings import LIBRARY_ROOT as BASE, INDEX_PATH as DB_PATH
 SOURCE_REGISTRY = Path(__file__).with_name("source_folders.tsv")
 LFF_CHURCH_REGISTRY = Path(__file__).with_name("lff_church_sources.tsv")
 OCR_CACHE_DIR = Path(__file__).with_name("state") / "ocr_text"
@@ -463,13 +462,10 @@ def init_db(conn: sqlite3.Connection) -> None:
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_rel_path ON documents(rel_path)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_chunk_refs_ref ON chunk_refs(scripture_ref)")
-    columns = {row[1] for row in conn.execute("PRAGMA table_info(documents)")}
-    for name, kind in (("file_size", "INTEGER"), ("modified_ns", "INTEGER"), ("content_sha256", "TEXT")):
-        if name not in columns:
-            conn.execute(f"ALTER TABLE documents ADD COLUMN {name} {kind}")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunk_refs_chunk ON chunk_refs(chunk_id)")
     conn.commit()
+    from database_migrations import migrate
+    migrate(conn)
+
 
 
 # Helper functions for document management
@@ -594,13 +590,19 @@ def main() -> None:
         print(f"Found {len(files)} files to index.\n")
 
         failures = []
+        pending = []
         for path in files:
             try:
+                if path.is_file() and path.stat().st_size == 0:
+                    pending.append({"path": str(path), "reason": "empty_source", "action": "Acquire readable source or transcript; existing index retained"})
+                    continue
                 index_file(conn, path)
             except Exception as exc:
                 conn.rollback()
                 failures.append({"path": str(path), "error": str(exc)})
                 print(f"ERROR: {path}: {exc}", flush=True)
+        atomic_write_text(DB_PATH.parent / "index_pending.json", json.dumps(pending, indent=2))
+        print(f"Pending source recovery: {len(pending)} empty files; see index_pending.json", flush=True)
         atomic_write_text(DB_PATH.parent / "index_errors.json", json.dumps(failures, indent=2))
         if failures:
             raise RuntimeError(f"{len(failures)} files failed; see index_errors.json")

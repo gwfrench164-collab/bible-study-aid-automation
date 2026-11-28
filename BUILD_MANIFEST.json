@@ -1,14 +1,20 @@
 {
+  "build_id": "2026.11.27-824f2401f8",
   "built_on": "2026-11-27",
   "source_sha256": {
     "bible_study_search_app.py": "19d2fcb2db7500197e66466ca54b30db5143077ee4198a1abbe8f214184d6dcd",
     "local_security.py": "5631e6eb3b7c59b937fe7b318f6d029e3cafac5b869427c51970642fd386a3a9",
     "query_bible_study.py": "f1193432f6fc8fb90332688ae1dea68e68f2d38aaf0e0c4e331681877a7c86a1",
     "scripture_references.py": "35c731e830b1546fbf67d5732fbd522a6af7584b91018fcc50e8dee2a1134ae0",
-    "import_commentaries.py": "188f5c9db25b4c95f674431cb1f45ca9b911260773e4c06f5f11504f09940642",
+    "import_commentaries.py": "1cc7d9956f8a0dc3f87424a505ee1711d1462ae672e6afa2d1e1f25cd948b54e",
     "database_backup.py": "3ef466dc2ed37e82f255b3561c6e8bbc478a6f909226956e505176554ba6410b",
-    "scheduled_intake.py": "a28525c7786bb83f2d741807c6595badbefe54256d98919d6b82db8d4fccd4dc",
-    "update_bible_study_aid.sh": "239d47d7c1cfed0b5bdd69924e80cc12c8b91b67413a70c1571c56437a5a62ae",
-    "intake_health.py": "485db596c3d109bce7182edf41a346753a222c7889350562eeb80a25e4c16fd3"
+    "scheduled_intake.py": "62e8a3ab7b264121690305ed6e6b1a6c1dedee8953ffba722d6c534fa9048e82",
+    "update_bible_study_aid.sh": "661050df0d2326dd13da8409b07f8aa355d2c7f25a8a055e6ddbcb18588b3c3d",
+    "intake_health.py": "ad1438e39585415161d6ad70691f35994a24a3d3df4f887a16826e6d72af54c5",
+    "database_migrations.py": "09b52bfdf812f08c5ec8ee16417811dd7df4e70e6da626c1be2521846ce94f8c",
+    "database_restore.py": "33c24424a04550d990dd4da55a4091a20d87ea4f70ff86bda8976d1767c89d91",
+    "select_python.sh": "4fcb19675f931c926abd16122526778dae705ba231ff0b63c811b527851ca0ef",
+    "bounded_command.py": "a45b57c2f745321ea52106d503f6dcd67d2cb4e4dd3529849ffadacaf6514bfa",
+    "app_version.py": "5fad7949fa8bd372ca287d89c271feca0e9df0c44111d1e241c15a146cc958a2"
   }
 }

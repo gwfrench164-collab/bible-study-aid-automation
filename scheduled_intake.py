@@ -108,7 +108,7 @@ def run_lane(lane, log, fd, env):
     results = []
     for script, timeout in [('import_lfbi_downloads.py', 600), ('import_commentaries.py', 1800),
                             ('build_scripture_index.py', 300), ('report_library_status.py', 300)]:
-        results.append(run_command([sys.executable, '-B', str(AUTOMATION / script)], log, fd, timeout, env))
+        results.append(run_command([env.get('BIBLE_STUDY_PYTHON', sys.executable), '-B', str(AUTOMATION / script)], log, fd, timeout, env))
     try:
         moodle_queue()
     except Exception as exc:
@@ -176,7 +176,7 @@ def main():
                       next_due=now + (3600 if args.lane == 'local' else 7200))
         atomic_json(path, record)
         env = dict(os.environ, BIBLE_STUDY_LOCKED='1', BIBLE_STUDY_UNATTENDED='1',
-                   BIBLE_STUDY_PYTHON=sys.executable, PYTHONUNBUFFERED='1', PYTHONDONTWRITEBYTECODE='1',
+                   BIBLE_STUDY_PYTHON=str(AUTOMATION/'.venv/bin/python') if (AUTOMATION/'.venv/bin/python').is_file() else sys.executable, PYTHONUNBUFFERED='1', PYTHONDONTWRITEBYTECODE='1',
                    BIBLE_STUDY_TRANSCRIPTION_LIMIT='5', BIBLE_STUDY_TRANSCRIPTION_TIME_BUDGET_MINUTES='10',
                    PATH='/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin')
         with logfile.open('w') as log:
@@ -187,8 +187,13 @@ def main():
                 results = [1]
             record['exit_codes'] = results
             record_result(record, all(code == 0 for code in results), time.time())
+            pending_path = BASE/'99_Index/index_pending.json'
+            if record['status'] == 'ok' and pending_path.exists():
+                pending=json.loads(pending_path.read_text())
+                record['pending_sources']=len(pending)
+                if pending:record['status']='ok_with_pending'
             atomic_json(path, record)
-        return 0 if record['status'] == 'ok' else 1
+        return 0 if record['status'] in {'ok','ok_with_pending'} else 1
 
 
 if __name__ == '__main__':

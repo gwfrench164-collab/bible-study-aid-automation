@@ -1,0 +1,7 @@
+-r requirements-test.txt
+yt-dlp>=2026.7.4
+python-docx>=1.1,<2
+pypdf>=5,<7
+python-pptx>=1,<2
+openpyxl>=3.1,<4
+requests>=2.32,<3

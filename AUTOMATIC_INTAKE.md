@@ -119,3 +119,13 @@ anything, saves backups, and validates generated plist files. Live launchd resul
 are recorded separately in the implementation workspace verification report.
 
 Apple reference: https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
+
+## Runtime and recovery follow-up (November 27, 2026)
+
+The updater now sources `select_python.sh`, checks intake imports before doing work and prefers the project's `.venv`. An explicit `BIBLE_STUDY_PYTHON` must pass the same preflight. Run `bash update_bible_study_aid.sh --check-runtime` to inspect it without updating the library. Install intake dependencies using `requirements-intake.txt`; speech recognition remains a separate heavier runtime and can be selected with `BIBLE_STUDY_TRANSCRIPTION_PYTHON`.
+
+Each download source is bounded by `BIBLE_STUDY_SOURCE_TIMEOUT` (90 seconds by default). A timeout remains a reported failure but does not indefinitely prevent later sources and indexing. Downloads can be resumed using the existing archives. Longer sources can need a larger explicit budget. An entire acquisition lane still has its overall time limit.
+
+Empty source files are preserved and recorded in `99_Index/index_pending.json`; they are not indexed as blank content, deleted or represented as successfully recovered. Scheduled local intake reports `ok_with_pending` when available files processed successfully but recovery remains. Actual extraction failures continue in `index_errors.json` and cause failure. The Update status page shows this distinction.
+
+Successful updater transcription now preserves audio using `--keep-audio`. Storage retention needs deliberate management rather than automatic deletion of originals.

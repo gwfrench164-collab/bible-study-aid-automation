@@ -4,7 +4,7 @@
 - This is the live automation repository; the ChatGPT project sources mirror is read-only.
 - Preserve original documents, audio, transcripts, provenance and existing features. Never prune missing iCloud sources automatically.
 - Review current code and live status before treating historical review statements as facts.
-- Keep desktop functionality primary. Phone access must eventually work independently of the Mac; no network exposure before authentication and source permissions.
+- Keep desktop functionality primary. Phone access may initially use a private Tailscale connection after security review; retain the longer-term Mac-independent/offline options. No public exposure. Authentication and source permissions precede remote access.
 - KJV only for future Bible text. No doctrinal rankings of authors; personal preferences remain user-controlled.
 
 ## Implementation and validation

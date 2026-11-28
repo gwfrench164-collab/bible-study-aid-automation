@@ -13,9 +13,18 @@ Updated November 27, 2026. Original review is preserved below. Its “every item
 | R11 | Already implemented: source/author management. Defaults remain built in but are overridable. |
 | R3 / R6 / R9 | Review partly stale: exact phrase mode, reading controls and grouped/filterable results already exist. Further improvements remain. |
 | O1 / L1–L3 / T1–T8 | Open: unattended Pages, complete authenticated Acts intake, transcription comparison and quality improvements. Do not claim completion from unit tests. |
-| P1–P3 | Open; Mac-independent phone service is the user's requirement. The review's Mac-tunnel recommendation does not meet it. |
+| P1–P3 | Open. Revised roadmap allows evaluating Tailscale initially; no public exposure. Preserve future independent/offline possibilities; a private Mac tunnel still requires the Mac awake. |
 
 Database protection added: verified daily snapshots outside iCloud before scheduled/local updater work; reference-only rebuild uses the shared lock and a backup. Snapshots are retained without automatic deletion; monitor disk space. Direct legacy entry points still need a complete lock/backup audit.
+
+## November 27 follow-up and acceptance results
+
+- **O3 / H2:** Fixed regression in PATH-only Python selection. Dependency preflight selects the isolated project environment, with explicit override validation; `--check-runtime` is read-only. Installed downloader 2026.11.23. Tested the same Homebrew-first PATH that previously selected a dependency-incomplete interpreter.
+- **O2 / O4:** Per-source download time limits prevent an individual source monopolizing acquisition. Empty source files remain intact and enter persistent `index_pending.json`; failures in readable sources still fail the run. Status distinguishes `ok_with_pending` from complete success. Real local lane returned `[0,0,0,0]` with one pending empty transcript. External provider failures and an entire acquisition run remain unverified.
+- **C6 / database protection:** Added numbered transactional schema migrations and a restore-to-new tool. Repeated migrations and injected rollback tested. Real-backup restore passed SQLite, foreign-key and FTS checks: 4,031 documents, 195,477 chunks. The drill does not replace the live database.
+- **O9:** Build identity is embedded in the packaged app and displayed on Update status. Source-tree identity and installed-app identity are distinguished.
+- **L3 / L5 / L6:** Acts raw manifest currently contains 45 resource entries and 16 YouTube links; processed manifest lists 44 downloaded, 1 previously available, 0 queued resources and 0 processed videos. These are historical manifest counts, not evidence that every file/transcript is present or indexed. Full course acceptance remains open.
+- **Roadmap:** User-supplied revision reconciled without removing original review identifiers. No missing handoff documents remain.
 
 ---
 

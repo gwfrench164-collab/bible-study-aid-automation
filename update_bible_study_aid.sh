@@ -3,16 +3,12 @@
 set -u
 
 # A kernel lock survives crashes safely and serializes all current updater runs.
-if [ -n "${BIBLE_STUDY_PYTHON:-}" ]; then
-    PYTHON_BIN="$BIBLE_STUDY_PYTHON"
-else
-    PYTHON_BIN="$(command -v python3)"
-fi
-if [ ! -x "$PYTHON_BIN" ]; then
-    echo "Python is unavailable; set BIBLE_STUDY_PYTHON to the installed interpreter." >&2
-    exit 2
-fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/select_python.sh"
+if [ "${1:-}" = "--check-runtime" ]; then
+    "$PYTHON_BIN" -c 'import sys,yt_dlp.version; print("Updater Python:",sys.executable); print("Downloader:",yt_dlp.version.__version__)'
+    exit 0
+fi
 if [ "${BIBLE_STUDY_LOCKED:-}" != "1" ]; then
     exec "$PYTHON_BIN" "$SCRIPT_DIR/pipeline_lock.py" "$0" "$@"
 fi
@@ -170,10 +166,10 @@ while IFS='|' read -r NAME TYPE URL DEST_REL; do
     if [ "$MODE" = "backlog" ]; then
         echo "Downloading up to $LIMIT new episodes..." | tee -a "$LOG_FILE"
         DOWNLOAD_ARGS+=(--max-downloads "$LIMIT")
-        "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
+        "$PYTHON_BIN" "$AUTOMATION_DIR/bounded_command.py" --timeout "${BIBLE_STUDY_SOURCE_TIMEOUT:-90}" -- "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
     else
         echo "Downloading new episodes..." | tee -a "$LOG_FILE"
-        "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
+        "$PYTHON_BIN" "$AUTOMATION_DIR/bounded_command.py" --timeout "${BIBLE_STUDY_SOURCE_TIMEOUT:-90}" -- "${YT_DLP[@]}" "${DOWNLOAD_ARGS[@]}" "$URL" >> "$LOG_FILE" 2>&1
     fi
     DOWNLOAD_STATUS=$?
     if [ "$DOWNLOAD_STATUS" -ne 0 ] && { [ "$DOWNLOAD_STATUS" -ne 101 ] || [ "$MODE" != "backlog" ]; }; then
@@ -192,13 +188,22 @@ if [ ! -f "$TRANSCRIBER" ]; then
 else
     TRANSCRIBE_ARGS=(
         "$TRANSCRIBER"
+        --keep-audio
         --pause-seconds "$PAUSE_SECONDS"
         --limit "$TRANSCRIPTION_LIMIT"
         --time-budget-minutes "$TRANSCRIPTION_TIME_BUDGET"
         --language-confidence "$LANGUAGE_CONFIDENCE"
     )
 
-    TRANSCRIBE_PYTHON="$PYTHON_BIN"
+    # Speech recognition has heavier dependencies than intake. Preserve the
+    # installed working speech runtime when the intake venv has no Whisper.
+    OPENAI_PYTHON="${BIBLE_STUDY_TRANSCRIPTION_PYTHON:-$PYTHON_BIN}"
+    if [ -z "${BIBLE_STUDY_TRANSCRIPTION_PYTHON:-}" ] && ! "$OPENAI_PYTHON" -c 'import whisper, numpy' >/dev/null 2>&1; then
+        for candidate in /usr/local/bin/python3 "$(command -v python3)"; do
+            if [ -x "$candidate" ] && "$candidate" -c 'import whisper, numpy' >/dev/null 2>&1; then OPENAI_PYTHON="$candidate"; break; fi
+        done
+    fi
+    TRANSCRIBE_PYTHON="$OPENAI_PYTHON"
     TRANSCRIBE_MODEL="$OPENAI_WHISPER_MODEL"
     EFFECTIVE_BACKEND="$TRANSCRIPTION_BACKEND"
     if [ "$TRANSCRIPTION_BACKEND" = "mlx" ] || [ "$TRANSCRIPTION_BACKEND" = "auto" ]; then
@@ -222,7 +227,7 @@ else
 
     if [ $TRANSCRIBE_STATUS -ne 0 ] && [ "$EFFECTIVE_BACKEND" = "mlx" ]; then
         echo "MLX transcription had a problem; retrying unfinished audio with OpenAI Whisper." | tee -a "$LOG_FILE"
-        "$PYTHON_BIN" "${TRANSCRIBE_ARGS[@]}" \
+        "$OPENAI_PYTHON" "${TRANSCRIBE_ARGS[@]}" \
             --backend openai \
             --model "$OPENAI_WHISPER_MODEL" \
             "${TRANSCRIPTION_DIRS[@]}" >> "$LOG_FILE" 2>&1
@@ -282,7 +287,12 @@ if [ "$FAILURES" -ne 0 ]; then
     run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"
     exit 1
 fi
-echo "Update complete." | tee -a "$LOG_FILE"
+PENDING_COUNT=$("$PYTHON_BIN" -c 'import json,sys,pathlib; p=pathlib.Path(sys.argv[1]); print(len(json.loads(p.read_text())) if p.exists() else 0)' "$BASE/99_Index/index_pending.json")
+if [ "$PENDING_COUNT" -gt 0 ]; then
+    echo "Available files updated; $PENDING_COUNT sources still need recovery. See Update status." | tee -a "$LOG_FILE"
+else
+    echo "Update complete." | tee -a "$LOG_FILE"
+fi
 if ! run_stage "Library coverage report" "$PYTHON_BIN" "$COVERAGE_REPORTER"; then
     echo "Update completed with $FAILURES failed stages; coverage report failed." | tee -a "$LOG_FILE"
     exit 1
